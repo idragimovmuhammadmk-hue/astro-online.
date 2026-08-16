@@ -3,174 +3,350 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+
 <title>ASTRO ONLINE</title>
 
 <style>
-*{box-sizing:border-box}
+*{
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
 
 body{
     margin:0;
-    background:#070711;
+    min-height:100vh;
     color:#fff;
-    font-family:Arial,sans-serif;
+    font-family:Inter,Arial,sans-serif;
+    background:
+        radial-gradient(circle at 10% 10%,rgba(124,58,237,.18),transparent 30%),
+        radial-gradient(circle at 90% 20%,rgba(236,72,153,.12),transparent 30%),
+        #05050b;
+    overflow-x:hidden;
 }
 
-.header{
-    height:70px;
-    padding:0 25px;
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    background:#0d0d1c;
-    border-bottom:1px solid #292943;
-    position:sticky;
-    top:0;
-    z-index:100;
+body:before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    background-image:
+        linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);
+    background-size:45px 45px;
+    mask-image:linear-gradient(to bottom,#000,transparent);
 }
 
-.logo{
-    font-size:24px;
-    font-weight:900;
-    letter-spacing:2px;
-}
-
-.logo span{color:#8b5cf6}
-
-.nav{
-    display:flex;
-    gap:8px;
-    flex-wrap:wrap;
+button,
+input,
+select{
+    font:inherit;
 }
 
 button{
     border:0;
     cursor:pointer;
-    color:white;
-    background:#6d4aff;
-    padding:10px 15px;
-    border-radius:10px;
 }
 
-button:hover{
-    background:#825fff;
+.header{
+    position:sticky;
+    top:0;
+    z-index:100;
+    height:76px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
+    padding:0 28px;
+    background:rgba(7,7,16,.78);
+    backdrop-filter:blur(20px);
+    border-bottom:1px solid rgba(255,255,255,.08);
+}
+
+.logo{
+    font-size:25px;
+    font-weight:1000;
+    letter-spacing:3px;
+    white-space:nowrap;
+}
+
+.logo span{
+    background:linear-gradient(90deg,#8b5cf6,#ec4899,#22d3ee);
+    -webkit-background-clip:text;
+    color:transparent;
+}
+
+.nav{
+    display:flex;
+    align-items:center;
+    justify-content:flex-end;
+    gap:8px;
+    flex-wrap:wrap;
 }
 
 .nav button{
-    background:#17172a;
-    border:1px solid #30304c;
+    position:relative;
+    overflow:hidden;
+    padding:10px 14px;
+    border-radius:11px;
+    color:#aaa;
+    background:rgba(255,255,255,.045);
+    border:1px solid rgba(255,255,255,.08);
+    transition:.25s;
 }
 
-.nav .admin-btn{
-    background:#8b5cf6;
-    border-color:#a78bfa;
+.nav button:hover{
+    color:#fff;
+    transform:translateY(-2px);
+    border-color:rgba(167,139,250,.55);
+    box-shadow:0 8px 25px rgba(124,58,237,.18);
+}
+
+.nav .admin{
+    color:white;
+    background:linear-gradient(135deg,#7c3aed,#db2777);
+    border-color:transparent;
+    box-shadow:0 0 25px rgba(139,92,246,.25);
 }
 
 .container{
     width:min(1200px,94%);
-    margin:30px auto;
+    margin:35px auto 80px;
 }
 
-.page{display:block}
-.hidden{display:none!important}
+.page{
+    animation:pageIn .45s ease;
+}
+
+.hidden{
+    display:none!important;
+}
+
+@keyframes pageIn{
+    from{
+        opacity:0;
+        transform:translateY(12px);
+    }
+    to{
+        opacity:1;
+        transform:none;
+    }
+}
 
 .hero{
-    padding:45px;
-    border:1px solid #30304c;
-    border-radius:22px;
+    position:relative;
+    overflow:hidden;
+    padding:70px 55px;
+    border:1px solid rgba(255,255,255,.09);
+    border-radius:28px;
     background:
-        radial-gradient(circle at 80% 20%,rgba(139,92,246,.25),transparent 35%),
-        #0e0e1e;
-    margin-bottom:25px;
+        radial-gradient(circle at 80% 30%,rgba(139,92,246,.28),transparent 35%),
+        radial-gradient(circle at 20% 100%,rgba(236,72,153,.16),transparent 35%),
+        rgba(15,15,28,.78);
+    box-shadow:0 30px 100px rgba(0,0,0,.4);
+}
+
+.hero:after{
+    content:"";
+    position:absolute;
+    width:260px;
+    height:260px;
+    right:-80px;
+    top:-80px;
+    border-radius:50%;
+    background:rgba(139,92,246,.16);
+    filter:blur(30px);
+    animation:float 6s ease-in-out infinite;
+}
+
+@keyframes float{
+    0%,100%{transform:translate(0,0)}
+    50%{transform:translate(-25px,25px)}
 }
 
 .hero h1{
-    font-size:48px;
-    margin:0 0 10px;
+    position:relative;
+    z-index:2;
+    margin:0;
+    font-size:clamp(45px,8vw,82px);
+    line-height:.95;
+    font-weight:1000;
+    letter-spacing:-4px;
 }
 
-.hero span{color:#a78bfa}
+.hero h1 span{
+    background:linear-gradient(90deg,#8b5cf6,#ec4899,#22d3ee);
+    -webkit-background-clip:text;
+    color:transparent;
+}
 
 .hero p{
-    color:#aaa;
+    position:relative;
+    z-index:2;
+    max-width:700px;
+    margin:24px 0;
+    color:#a5a5b9;
     font-size:18px;
+    line-height:1.6;
 }
 
-.grid{
-    display:grid;
-    grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
-    gap:18px;
+.btn{
+    padding:12px 18px;
+    border-radius:12px;
+    color:#fff;
+    background:linear-gradient(135deg,#7c3aed,#9333ea);
+    transition:.25s;
+    box-shadow:0 10px 30px rgba(124,58,237,.18);
 }
 
-.card{
-    background:#101020;
-    border:1px solid #2c2c47;
-    border-radius:16px;
-    padding:22px;
+.btn:hover{
+    transform:translateY(-3px);
+    box-shadow:0 15px 35px rgba(124,58,237,.3);
 }
 
-.card h2,
-.card h3{margin-top:0}
-
-.stat{
-    font-size:32px;
-    font-weight:900;
-    color:#a78bfa;
+.btn.gray{
+    background:#191925;
+    border:1px solid #303044;
+    box-shadow:none;
 }
 
-.muted{color:#888}
-
-input,select{
-    width:100%;
-    padding:12px;
-    margin:7px 0 14px;
-    background:#080812;
-    color:white;
-    border:1px solid #343451;
-    border-radius:10px;
+.btn.red{
+    background:linear-gradient(135deg,#be123c,#e11d48);
 }
 
-input:focus,select:focus{
-    outline:none;
-    border-color:#8b5cf6;
+.btn.green{
+    background:linear-gradient(135deg,#059669,#10b981);
+}
+
+.btn.orange{
+    background:linear-gradient(135deg,#d97706,#f59e0b);
 }
 
 .row{
     display:flex;
-    gap:10px;
     flex-wrap:wrap;
     align-items:center;
+    gap:10px;
 }
 
-.gray{background:#29293e}
-.green{background:#198754}
-.red{background:#b52f4b}
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:18px;
+}
+
+.mt{
+    margin-top:20px;
+}
+
+.card{
+    position:relative;
+    overflow:hidden;
+    padding:24px;
+    border-radius:20px;
+    background:rgba(15,15,27,.78);
+    border:1px solid rgba(255,255,255,.08);
+    box-shadow:0 15px 50px rgba(0,0,0,.2);
+    transition:.3s;
+}
+
+.card:hover{
+    transform:translateY(-4px);
+    border-color:rgba(139,92,246,.3);
+    box-shadow:0 20px 60px rgba(0,0,0,.3);
+}
+
+.stat{
+    font-size:32px;
+    font-weight:1000;
+    margin-top:10px;
+    background:linear-gradient(90deg,#a78bfa,#f0abfc);
+    -webkit-background-clip:text;
+    color:transparent;
+}
+
+.muted{
+    color:#88889d;
+}
+
+input,
+select{
+    width:100%;
+    margin:7px 0 15px;
+    padding:13px 14px;
+    color:white;
+    background:#080810;
+    border:1px solid #303044;
+    border-radius:11px;
+    outline:none;
+    transition:.2s;
+}
+
+input:focus,
+select:focus{
+    border-color:#8b5cf6;
+    box-shadow:0 0 0 3px rgba(139,92,246,.12);
+}
+
+label{
+    color:#aaaabd;
+    font-size:13px;
+}
+
+hr{
+    border:0;
+    border-top:1px solid #29293b;
+    margin:25px 0;
+}
 
 .rank,
 .quest{
-    background:#151527;
-    border:1px solid #2d2d48;
-    border-radius:12px;
-    padding:16px;
-    margin-bottom:10px;
+    padding:18px;
+    margin-bottom:12px;
+    border-radius:15px;
+    background:rgba(255,255,255,.035);
+    border:1px solid rgba(255,255,255,.07);
+    transition:.25s;
+}
+
+.rank:hover,
+.quest:hover{
+    transform:translateX(5px);
+    border-color:rgba(139,92,246,.4);
 }
 
 .rank{
     display:flex;
-    justify-content:space-between;
     align-items:center;
+    justify-content:space-between;
+    gap:20px;
 }
 
 .rank-name{
+    font-size:20px;
+    font-weight:1000;
+}
+
+.rank-price{
+    color:#a78bfa;
     font-weight:900;
-    font-size:18px;
 }
 
 .badge{
-    background:#292944;
-    color:#ccc;
-    border-radius:8px;
+    display:inline-flex;
+    align-items:center;
     padding:5px 9px;
+    border-radius:8px;
+    color:#bbb;
+    background:#222235;
+    border:1px solid #303044;
     font-size:12px;
+}
+
+.table-wrap{
+    overflow:auto;
 }
 
 table{
@@ -178,78 +354,182 @@ table{
     border-collapse:collapse;
 }
 
-th,td{
+th,
+td{
+    padding:15px 12px;
     text-align:left;
-    padding:12px;
-    border-bottom:1px solid #29293e;
+    border-bottom:1px solid #252537;
 }
 
-th{color:#aaa}
+th{
+    color:#85859b;
+    font-size:13px;
+}
 
-.table-wrap{
-    overflow:auto;
+tr{
+    transition:.2s;
+}
+
+tr:hover{
+    background:rgba(139,92,246,.05);
 }
 
 .modal{
     position:fixed;
     inset:0;
     z-index:1000;
-    background:rgba(0,0,0,.78);
     display:flex;
-    justify-content:center;
     align-items:center;
+    justify-content:center;
     padding:20px;
+    background:rgba(0,0,0,.78);
+    backdrop-filter:blur(12px);
+    animation:fade .2s ease;
+}
+
+@keyframes fade{
+    from{opacity:0}
+    to{opacity:1}
 }
 
 .modal-box{
-    width:min(500px,100%);
-    background:#111122;
-    border:1px solid #3a3a5a;
-    border-radius:18px;
-    padding:25px;
+    width:min(550px,100%);
+    max-height:90vh;
+    overflow:auto;
+    padding:27px;
+    border-radius:22px;
+    background:#10101c;
+    border:1px solid rgba(255,255,255,.1);
+    box-shadow:0 30px 100px rgba(0,0,0,.65);
+    animation:modalIn .3s ease;
+}
+
+@keyframes modalIn{
+    from{
+        opacity:0;
+        transform:scale(.94) translateY(15px);
+    }
+    to{
+        opacity:1;
+        transform:none;
+    }
+}
+
+.admin-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:20px;
 }
 
 .admin-title{
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:15px;
+    margin:0;
+    font-size:34px;
+    font-weight:1000;
 }
 
 .admin-tabs{
     display:flex;
     gap:8px;
     flex-wrap:wrap;
-    margin:20px 0;
+    margin:25px 0;
+    padding:7px;
+    border-radius:15px;
+    background:#0a0a12;
+    border:1px solid #252537;
 }
 
-.admin-tabs button{
-    background:#17172a;
-    border:1px solid #30304c;
+.admin-tab{
+    padding:11px 16px;
+    border-radius:10px;
+    color:#88889d;
+    background:transparent;
+    transition:.25s;
 }
 
-.admin-tabs button.active{
-    background:#6d4aff;
+.admin-tab:hover{
+    color:white;
 }
 
-.admin-section{display:block}
+.admin-tab.active{
+    color:white;
+    background:linear-gradient(135deg,#7c3aed,#9333ea);
+    box-shadow:0 5px 20px rgba(124,58,237,.25);
+}
+
+.admin-content{
+    animation:tabIn .3s ease;
+}
+
+@keyframes tabIn{
+    from{
+        opacity:0;
+        transform:translateY(8px);
+    }
+    to{
+        opacity:1;
+        transform:none;
+    }
+}
+
+footer{
+    padding:45px;
+    text-align:center;
+    color:#555568;
+}
 
 #toast{
     position:fixed;
     right:20px;
     bottom:20px;
-    z-index:2000;
-    background:#18182b;
-    border:1px solid #41415e;
-    padding:14px 18px;
-    border-radius:12px;
+    z-index:3000;
+    max-width:380px;
+    padding:15px 19px;
+    border-radius:13px;
+    background:#151522;
+    border:1px solid #3a3a52;
+    box-shadow:0 20px 60px rgba(0,0,0,.45);
     display:none;
+    animation:toastIn .3s ease;
 }
 
-footer{
-    text-align:center;
-    color:#666;
-    padding:40px;
+@keyframes toastIn{
+    from{
+        opacity:0;
+        transform:translateY(15px);
+    }
+    to{
+        opacity:1;
+        transform:none;
+    }
+}
+
+@media(max-width:850px){
+
+    .header{
+        height:auto;
+        padding:15px;
+        align-items:flex-start;
+        flex-direction:column;
+    }
+
+    .nav{
+        width:100%;
+        justify-content:flex-start;
+    }
+
+    .hero{
+        padding:45px 25px;
+    }
+
+    .hero h1{
+        letter-spacing:-2px;
+    }
+
+    .rank{
+        align-items:flex-start;
+        flex-direction:column;
+    }
 }
 </style>
 </head>
@@ -262,38 +542,25 @@ footer{
         ASTRO <span>ONLINE</span>
     </div>
 
-    <div class="nav">
+    <nav class="nav">
 
-        <button onclick="showPage('home')">
-            Главная
-        </button>
+        <button onclick="showPage('home')">Главная</button>
 
-        <button onclick="showPage('profile')">
-            Профиль
-        </button>
+        <button onclick="showPage('profile')">Профиль</button>
 
-        <button onclick="showPage('ranks')">
-            Ранги
-        </button>
+        <button onclick="showPage('ranks')">Ранги</button>
 
-        <button onclick="showPage('quests')">
-            Квесты
-        </button>
+        <button onclick="showPage('quests')">Квесты</button>
 
-        <button onclick="showPage('rating')">
-            Рейтинг
-        </button>
+        <button onclick="showPage('rating')">Рейтинг</button>
 
-        <button onclick="openLogin()">
-            Войти
-        </button>
+        <button onclick="openLogin()">Войти</button>
 
-        <!-- ВОТ НОВАЯ КНОПКА -->
-        <button class="admin-btn" onclick="openAdmin()">
+        <button class="admin" onclick="openAdminLogin()">
             ⚙️ Админка
         </button>
 
-    </div>
+    </nav>
 
 </header>
 
@@ -301,29 +568,32 @@ footer{
 <main class="container">
 
 
-<!-- ГЛАВНАЯ -->
+<!-- HOME -->
 
 <section id="page-home" class="page">
 
     <div class="hero">
 
         <h1>
-            ASTRO <span>ONLINE</span>
+            ASTRO
+            <span>ONLINE</span>
         </h1>
 
         <p>
-            Рейтинги, ранги, квесты и прогресс игроков.
+            Твоя онлайн-платформа с рейтингом,
+            рангами, квестами и соревнованиями.
         </p>
 
         <div class="row">
 
-            <button onclick="showPage('profile')">
-                👤 Профиль
+            <button class="btn"
+                    onclick="showPage('rating')">
+                🏆 Смотреть рейтинг
             </button>
 
-            <button class="gray"
-                    onclick="showPage('rating')">
-                🏆 Рейтинг
+            <button class="btn gray"
+                    onclick="openRegister()">
+                ✨ Создать аккаунт
             </button>
 
         </div>
@@ -331,25 +601,25 @@ footer{
     </div>
 
 
-    <div class="grid">
+    <div class="grid mt">
 
         <div class="card">
-            <h3>💰 Баланс</h3>
+            <div class="muted">💰 Баланс</div>
             <div class="stat" id="homeBalance">0 ₽</div>
         </div>
 
         <div class="card">
-            <h3>⭐ XP</h3>
+            <div class="muted">⭐ XP</div>
             <div class="stat" id="homeXp">0</div>
         </div>
 
         <div class="card">
-            <h3>🏆 Победы</h3>
+            <div class="muted">🏆 Победы</div>
             <div class="stat" id="homeWins">0</div>
         </div>
 
         <div class="card">
-            <h3>📈 ELO</h3>
+            <div class="muted">📈 ELO</div>
             <div class="stat" id="homeElo">1000</div>
         </div>
 
@@ -358,7 +628,7 @@ footer{
 </section>
 
 
-<!-- ПРОФИЛЬ -->
+<!-- PROFILE -->
 
 <section id="page-profile" class="page hidden">
 
@@ -366,25 +636,21 @@ footer{
 
         <h2>👤 Профиль</h2>
 
-        <div id="profileNotLogged">
+        <div id="profileGuest">
 
             <p class="muted">
-                Ты не вошёл в аккаунт.
+                Войди в аккаунт, чтобы увидеть профиль.
             </p>
 
-            <button onclick="openLogin()">
+            <button class="btn"
+                    onclick="openLogin()">
                 Войти
-            </button>
-
-            <button class="gray"
-                    onclick="openRegister()">
-                Регистрация
             </button>
 
         </div>
 
 
-        <div id="profileLogged" class="hidden">
+        <div id="profileUser" class="hidden">
 
             <p>
                 Email:
@@ -395,16 +661,17 @@ footer{
 
             <input id="profileUsername">
 
-            <button onclick="saveProfile()">
+            <button class="btn"
+                    onclick="saveProfile()">
                 Сохранить
             </button>
 
-            <button class="red"
+            <button class="btn red"
                     onclick="logout()">
                 Выйти
             </button>
 
-            <hr style="border-color:#29293e;margin:25px 0">
+            <hr>
 
             <div class="grid">
 
@@ -437,7 +704,7 @@ footer{
 </section>
 
 
-<!-- РАНГИ -->
+<!-- RANKS -->
 
 <section id="page-ranks" class="page hidden">
 
@@ -454,7 +721,7 @@ footer{
 </section>
 
 
-<!-- КВЕСТЫ -->
+<!-- QUESTS -->
 
 <section id="page-quests" class="page hidden">
 
@@ -471,13 +738,13 @@ footer{
 </section>
 
 
-<!-- РЕЙТИНГ -->
+<!-- RATING -->
 
 <section id="page-rating" class="page hidden">
 
     <div class="card">
 
-        <h2>🏆 Рейтинг игроков</h2>
+        <h2>🏆 Рейтинг</h2>
 
         <div class="table-wrap">
 
@@ -506,25 +773,27 @@ footer{
 </section>
 
 
-<!-- АДМИНКА -->
+<!-- ADMIN -->
 
 <section id="page-admin" class="page hidden">
 
     <div class="card">
 
-        <div class="admin-title">
+        <div class="admin-head">
 
             <div>
 
-                <h1>⚙️ ASTRO ADMIN</h1>
+                <h1 class="admin-title">
+                    ⚙️ ASTRO ADMIN
+                </h1>
 
                 <div class="muted">
-                    Панель управления
+                    Центр управления проектом
                 </div>
 
             </div>
 
-            <button class="red"
+            <button class="btn red"
                     onclick="showPage('home')">
                 Закрыть
             </button>
@@ -534,16 +803,18 @@ footer{
 
         <div class="admin-tabs">
 
-            <button class="active"
+            <button class="admin-tab active"
                     onclick="adminTab('users',this)">
                 👥 Игроки
             </button>
 
-            <button onclick="adminTab('ranks',this)">
+            <button class="admin-tab"
+                    onclick="adminTab('ranks',this)">
                 💎 Ранги
             </button>
 
-            <button onclick="adminTab('quests',this)">
+            <button class="admin-tab"
+                    onclick="adminTab('quests',this)">
                 📜 Квесты
             </button>
 
@@ -553,14 +824,19 @@ footer{
         <!-- USERS -->
 
         <div id="admin-users"
-             class="admin-section">
+             class="admin-content">
 
-            <h2>👥 Игроки</h2>
+            <div class="row"
+                 style="justify-content:space-between">
 
-            <button class="gray"
-                    onclick="loadAdminUsers()">
-                Обновить
-            </button>
+                <h2>👥 Игроки</h2>
+
+                <button class="btn gray"
+                        onclick="loadAdminUsers()">
+                    ↻ Обновить
+                </button>
+
+            </div>
 
             <div class="table-wrap">
 
@@ -571,8 +847,9 @@ footer{
                         <tr>
                             <th>Игрок</th>
                             <th>ELO</th>
+                            <th>XP</th>
                             <th>Победы</th>
-                            <th>Действия</th>
+                            <th></th>
                         </tr>
 
                     </thead>
@@ -589,13 +866,13 @@ footer{
         <!-- RANKS -->
 
         <div id="admin-ranks"
-             class="admin-section hidden">
+             class="admin-content hidden">
 
             <div class="grid">
 
                 <div class="card">
 
-                    <h2>➕ Создать ранг</h2>
+                    <h2>➕ Новый ранг</h2>
 
                     <label>ID</label>
                     <input id="newRankId"
@@ -614,9 +891,9 @@ footer{
                            type="number"
                            value="5000">
 
-                    <button class="green"
+                    <button class="btn green"
                             onclick="createRank()">
-                        Создать
+                        Создать ранг
                     </button>
 
                 </div>
@@ -624,7 +901,7 @@ footer{
 
                 <div class="card">
 
-                    <h2>💎 Ранги</h2>
+                    <h2>💎 Все ранги</h2>
 
                     <div id="adminRanksList"></div>
 
@@ -638,13 +915,13 @@ footer{
         <!-- QUESTS -->
 
         <div id="admin-quests"
-             class="admin-section hidden">
+             class="admin-content hidden">
 
             <div class="grid">
 
                 <div class="card">
 
-                    <h2>➕ Создать квест</h2>
+                    <h2>➕ Новый квест</h2>
 
                     <label>ID</label>
                     <input id="newQuestId"
@@ -652,11 +929,11 @@ footer{
 
                     <label>Название</label>
                     <input id="newQuestTitle"
-                           placeholder="Новый квест">
+                           placeholder="Победитель">
 
                     <label>Описание</label>
                     <input id="newQuestDescription"
-                           placeholder="Описание">
+                           placeholder="Выполни задание">
 
                     <label>Награда</label>
                     <input id="newQuestReward"
@@ -668,9 +945,9 @@ footer{
                            type="number"
                            value="50">
 
-                    <button class="green"
+                    <button class="btn green"
                             onclick="createQuest()">
-                        Создать
+                        Создать квест
                     </button>
 
                 </div>
@@ -678,7 +955,7 @@ footer{
 
                 <div class="card">
 
-                    <h2>📜 Квесты</h2>
+                    <h2>📜 Все квесты</h2>
 
                     <div id="adminQuestsList"></div>
 
@@ -702,8 +979,7 @@ footer{
 
 <!-- LOGIN -->
 
-<div id="loginModal"
-     class="modal hidden">
+<div id="loginModal" class="modal hidden">
 
     <div class="modal-box">
 
@@ -721,24 +997,28 @@ footer{
 
         <div class="row">
 
-            <button onclick="login()">
+            <button class="btn"
+                    onclick="login()">
                 Войти
             </button>
 
-            <button class="gray"
+            <button class="btn gray"
                     onclick="closeModals()">
-                Закрыть
+                Отмена
             </button>
 
         </div>
 
         <p class="muted">
+
             Нет аккаунта?
+
             <a href="#"
                onclick="openRegister();return false;"
                style="color:#a78bfa">
-               Регистрация
+                Регистрация
             </a>
+
         </p>
 
     </div>
@@ -748,12 +1028,11 @@ footer{
 
 <!-- REGISTER -->
 
-<div id="registerModal"
-     class="modal hidden">
+<div id="registerModal" class="modal hidden">
 
     <div class="modal-box">
 
-        <h2>📝 Регистрация</h2>
+        <h2>✨ Регистрация</h2>
 
         <label>Никнейм</label>
 
@@ -771,46 +1050,12 @@ footer{
 
         <div class="row">
 
-            <button onclick="register()">
-                Создать
+            <button class="btn"
+                    onclick="register()">
+                Создать аккаунт
             </button>
 
-            <button class="gray"
-                    onclick="closeModals()">
-                Закрыть
-            </button>
-
-        </div>
-
-    </div>
-
-</div>
-
-
-<!-- ADMIN LOGIN -->
-
-<div id="adminLoginModal"
-     class="modal hidden">
-
-    <div class="modal-box">
-
-        <h2>⚙️ Вход администратора</h2>
-
-        <p class="muted">
-            Введи пароль администратора.
-        </p>
-
-        <input id="adminPassword"
-               type="password"
-               placeholder="Пароль">
-
-        <div class="row">
-
-            <button onclick="adminLogin()">
-                Войти
-            </button>
-
-            <button class="gray"
+            <button class="btn gray"
                     onclick="closeModals()">
                 Отмена
             </button>
@@ -822,10 +1067,51 @@ footer{
 </div>
 
 
-<!-- PLAYER -->
+<!-- ADMIN LOGIN -->
 
-<div id="playerModal"
-     class="modal hidden">
+<div id="adminLoginModal" class="modal hidden">
+
+    <div class="modal-box">
+
+        <h2>⚙️ Администратор</h2>
+
+        <p class="muted">
+            Вход проверяется сервером ASTRO.
+        </p>
+
+        <label>Email администратора</label>
+
+        <input id="adminEmail"
+               type="email"
+               placeholder="admin@example.com">
+
+        <label>Пароль администратора</label>
+
+        <input id="adminPassword"
+               type="password">
+
+        <div class="row">
+
+            <button class="btn"
+                    onclick="adminLogin()">
+                Войти в админку
+            </button>
+
+            <button class="btn gray"
+                    onclick="closeModals()">
+                Отмена
+            </button>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- PLAYER ADMIN -->
+
+<div id="playerModal" class="modal hidden">
 
     <div class="modal-box">
 
@@ -833,31 +1119,34 @@ footer{
 
         <h3 id="selectedPlayerName"></h3>
 
-        <label>Победы</label>
+        <label>Установить победы</label>
 
         <input id="playerWins"
-               type="number">
+               type="number"
+               min="0">
 
-        <label>Добавить баланс</label>
+        <label>Изменение баланса</label>
 
         <input id="playerMoney"
                type="number"
                value="0">
 
-        <label>Выдать ранг</label>
+        <label>Ранг</label>
 
-        <select id="playerRank"></select>
+        <select id="playerRank">
+            <option value="">Без изменения</option>
+        </select>
 
         <div class="row">
 
-            <button class="green"
+            <button class="btn green"
                     onclick="givePlayerChanges()">
                 Применить
             </button>
 
-            <button class="gray"
+            <button class="btn gray"
                     onclick="closeModals()">
-                Закрыть
+                Отмена
             </button>
 
         </div>
@@ -872,62 +1161,49 @@ footer{
 
 <script>
 
-let token=localStorage.getItem('astro_token')||'';
-let currentUser=null;
+let token=localStorage.getItem("astro_token")||"";
+let adminToken=localStorage.getItem("astro_admin_token")||"";
 
+let currentUser=null;
 let adminUsers=[];
 let adminRanks=[];
 let adminQuests=[];
-
 let selectedPlayer=null;
 
 
-/* NAVIGATION */
+/* =========================
+   NAVIGATION
+========================= */
 
 function showPage(page){
 
-    document.querySelectorAll('.page')
-        .forEach(x=>x.classList.add('hidden'));
+    document.querySelectorAll(".page")
+        .forEach(x=>x.classList.add("hidden"));
 
-    const el=document.getElementById('page-'+page);
+    const element=document.getElementById("page-"+page);
 
-    if(el){
-        el.classList.remove('hidden');
+    if(element){
+
+        element.classList.remove("hidden");
+
     }
 
-    if(page==='rating') loadRating();
-    if(page==='ranks') loadRanks();
-    if(page==='quests') loadQuests();
-    if(page==='profile') updateProfileUI();
+    if(page==="rating") loadRating();
+    if(page==="ranks") loadRanks();
+    if(page==="quests") loadQuests();
+    if(page==="profile") updateProfile();
 
 }
 
 
-/* TOAST */
-
-function toast(text){
-
-    const el=document.getElementById('toast');
-
-    el.textContent=text;
-
-    el.style.display='block';
-
-    clearTimeout(window.toastTimer);
-
-    window.toastTimer=setTimeout(()=>{
-        el.style.display='none';
-    },3000);
-
-}
-
-
-/* MODALS */
+/* =========================
+   MODALS
+========================= */
 
 function closeModals(){
 
-    document.querySelectorAll('.modal')
-        .forEach(x=>x.classList.add('hidden'));
+    document.querySelectorAll(".modal")
+        .forEach(x=>x.classList.add("hidden"));
 
 }
 
@@ -935,8 +1211,8 @@ function openLogin(){
 
     closeModals();
 
-    document.getElementById('loginModal')
-        .classList.remove('hidden');
+    document.getElementById("loginModal")
+        .classList.remove("hidden");
 
 }
 
@@ -944,22 +1220,58 @@ function openRegister(){
 
     closeModals();
 
-    document.getElementById('registerModal')
-        .classList.remove('hidden');
+    document.getElementById("registerModal")
+        .classList.remove("hidden");
+
+}
+
+function openAdminLogin(){
+
+    closeModals();
+
+    document.getElementById("adminLoginModal")
+        .classList.remove("hidden");
 
 }
 
 
-/* API */
+/* =========================
+   TOAST
+========================= */
+
+function toast(message){
+
+    const element=document.getElementById("toast");
+
+    element.textContent=message;
+    element.style.display="block";
+
+    clearTimeout(window.toastTimer);
+
+    window.toastTimer=setTimeout(()=>{
+
+        element.style.display="none";
+
+    },3500);
+
+}
+
+
+/* =========================
+   API
+========================= */
 
 async function api(url,options={}){
 
     options.headers=options.headers||{};
 
-    options.headers['Content-Type']='application/json';
+    options.headers["Content-Type"]="application/json";
 
     if(token){
-        options.headers.Authorization='Bearer '+token;
+
+        options.headers.Authorization=
+            "Bearer "+token;
+
     }
 
     const response=await fetch(url,options);
@@ -971,7 +1283,11 @@ async function api(url,options={}){
     }catch(e){}
 
     if(!response.ok){
-        throw new Error(data.error||'Ошибка сервера');
+
+        throw new Error(
+            data.error||"Ошибка сервера"
+        );
+
     }
 
     return data;
@@ -979,30 +1295,78 @@ async function api(url,options={}){
 }
 
 
-/* LOGIN */
+async function adminApi(url,options={}){
+
+    options.headers=options.headers||{};
+
+    options.headers["Content-Type"]="application/json";
+
+    if(adminToken){
+
+        options.headers["Authorization"]=
+            "Bearer "+adminToken;
+
+    }
+
+    const response=await fetch(url,options);
+
+    let data={};
+
+    try{
+        data=await response.json();
+    }catch(e){}
+
+    if(!response.ok){
+
+        throw new Error(
+            data.error||"Ошибка админки"
+        );
+
+    }
+
+    return data;
+
+}
+
+
+/* =========================
+   LOGIN
+========================= */
 
 async function login(){
 
     try{
 
-        const data=await api('/api/login',{
-            method:'POST',
+        const data=await api("/api/login",{
+
+            method:"POST",
+
             body:JSON.stringify({
-                email:document.getElementById('loginEmail').value,
-                password:document.getElementById('loginPassword').value
+
+                email:
+                    document.getElementById("loginEmail").value,
+
+                password:
+                    document.getElementById("loginPassword").value
+
             })
+
         });
 
         token=data.token;
+
         currentUser=data.user;
 
-        localStorage.setItem('astro_token',token);
+        localStorage.setItem(
+            "astro_token",
+            token
+        );
 
         closeModals();
 
-        updateProfileUI();
+        updateProfile();
 
-        toast('Вход выполнен');
+        toast("✅ Вход выполнен");
 
     }catch(e){
 
@@ -1013,31 +1377,47 @@ async function login(){
 }
 
 
-/* REGISTER */
+/* =========================
+   REGISTER
+========================= */
 
 async function register(){
 
     try{
 
-        const data=await api('/api/register',{
-            method:'POST',
+        const data=await api("/api/register",{
+
+            method:"POST",
+
             body:JSON.stringify({
-                username:document.getElementById('registerUsername').value,
-                email:document.getElementById('registerEmail').value,
-                password:document.getElementById('registerPassword').value
+
+                username:
+                    document.getElementById("registerUsername").value,
+
+                email:
+                    document.getElementById("registerEmail").value,
+
+                password:
+                    document.getElementById("registerPassword").value
+
             })
+
         });
 
         token=data.token;
+
         currentUser=data.user;
 
-        localStorage.setItem('astro_token',token);
+        localStorage.setItem(
+            "astro_token",
+            token
+        );
 
         closeModals();
 
-        updateProfileUI();
+        updateProfile();
 
-        toast('Аккаунт создан');
+        toast("✅ Аккаунт создан");
 
     }catch(e){
 
@@ -1048,78 +1428,109 @@ async function register(){
 }
 
 
-/* ME */
+/* =========================
+   ME
+========================= */
 
 async function loadMe(){
 
     if(!token){
 
-        updateProfileUI();
+        updateProfile();
 
         return;
+
     }
 
     try{
 
-        const data=await api('/api/me');
+        const data=await api("/api/me");
 
         currentUser=data.user;
 
-        updateProfileUI();
+        updateProfile();
 
     }catch(e){
 
-        token='';
+        token="";
         currentUser=null;
 
-        localStorage.removeItem('astro_token');
+        localStorage.removeItem(
+            "astro_token"
+        );
 
-        updateProfileUI();
+        updateProfile();
 
     }
 
 }
 
 
-/* PROFILE */
+/* =========================
+   PROFILE
+========================= */
 
-function updateProfileUI(){
+function updateProfile(){
 
     const logged=!!currentUser;
 
-    document.getElementById('profileNotLogged')
-        .classList.toggle('hidden',logged);
+    document.getElementById("profileGuest")
+        .classList.toggle("hidden",logged);
 
-    document.getElementById('profileLogged')
-        .classList.toggle('hidden',!logged);
+    document.getElementById("profileUser")
+        .classList.toggle("hidden",!logged);
 
     if(!logged){
 
-        document.getElementById('homeBalance').textContent='0 ₽';
-        document.getElementById('homeXp').textContent='0';
-        document.getElementById('homeWins').textContent='0';
-        document.getElementById('homeElo').textContent='1000';
+        document.getElementById("homeBalance")
+            .textContent="0 ₽";
+
+        document.getElementById("homeXp")
+            .textContent="0";
+
+        document.getElementById("homeWins")
+            .textContent="0";
+
+        document.getElementById("homeElo")
+            .textContent="1000";
 
         return;
+
     }
 
-    document.getElementById('profileEmail').textContent=currentUser.email;
+    document.getElementById("profileEmail")
+        .textContent=currentUser.email;
 
-    document.getElementById('profileUsername').value=currentUser.username;
+    document.getElementById("profileUsername")
+        .value=currentUser.username;
 
-    document.getElementById('profileBalance').textContent=
-        Number(currentUser.balance).toLocaleString('ru-RU')+' ₽';
+    document.getElementById("profileBalance")
+        .textContent=
+        Number(currentUser.balance)
+        .toLocaleString("ru-RU")+" ₽";
 
-    document.getElementById('profileXp').textContent=currentUser.xp;
-    document.getElementById('profileElo').textContent=currentUser.elo;
-    document.getElementById('profileWins').textContent=currentUser.wins;
+    document.getElementById("profileXp")
+        .textContent=currentUser.xp;
 
-    document.getElementById('homeBalance').textContent=
-        Number(currentUser.balance).toLocaleString('ru-RU')+' ₽';
+    document.getElementById("profileElo")
+        .textContent=currentUser.elo;
 
-    document.getElementById('homeXp').textContent=currentUser.xp;
-    document.getElementById('homeWins').textContent=currentUser.wins;
-    document.getElementById('homeElo').textContent=currentUser.elo;
+    document.getElementById("profileWins")
+        .textContent=currentUser.wins;
+
+    document.getElementById("homeBalance")
+        .textContent=
+        Number(currentUser.balance)
+        .toLocaleString("ru-RU")+" ₽";
+
+    document.getElementById("homeXp")
+        .textContent=currentUser.xp;
+
+    document.getElementById("homeWins")
+        .textContent=currentUser.wins;
+
+    document.getElementById("homeElo")
+        .textContent=currentUser.elo;
 
 }
 
@@ -1128,18 +1539,26 @@ async function saveProfile(){
 
     try{
 
-        const data=await api('/api/profile',{
-            method:'PUT',
+        const data=await api("/api/profile",{
+
+            method:"PUT",
+
             body:JSON.stringify({
-                username:document.getElementById('profileUsername').value
+
+                username:
+                    document.getElementById(
+                        "profileUsername"
+                    ).value
+
             })
+
         });
 
         currentUser=data.user;
 
-        updateProfileUI();
+        updateProfile();
 
-        toast('Профиль сохранён');
+        toast("✅ Профиль сохранён");
 
     }catch(e){
 
@@ -1152,45 +1571,71 @@ async function saveProfile(){
 
 function logout(){
 
-    token='';
+    token="";
     currentUser=null;
 
-    localStorage.removeItem('astro_token');
+    localStorage.removeItem(
+        "astro_token"
+    );
 
-    updateProfileUI();
+    updateProfile();
 
-    showPage('home');
+    showPage("home");
 
-    toast('Вы вышли');
+    toast("Вы вышли");
 
 }
 
 
-/* RATING */
+/* =========================
+   RATING
+========================= */
 
 async function loadRating(){
 
     try{
 
-        const data=await api('/api/leaderboard');
+        const data=await api(
+            "/api/leaderboard"
+        );
 
-        const body=document.getElementById('ratingBody');
+        const body=
+            document.getElementById(
+                "ratingBody"
+            );
 
-        body.innerHTML='';
+        body.innerHTML="";
 
-        data.players.forEach((p,i)=>{
+        data.players.forEach((player,index)=>{
 
-            const tr=document.createElement('tr');
+            const row=
+                document.createElement("tr");
 
-            tr.innerHTML=`
-                <td>${i+1}</td>
-                <td><b>${escapeHtml(p.username)}</b></td>
-                <td>${p.elo}</td>
-                <td>${p.xp}</td>
-                <td>${p.wins}</td>
+            row.innerHTML=`
+
+                <td>
+                    <b>${index+1}</b>
+                </td>
+
+                <td>
+                    ${escapeHtml(player.username)}
+                </td>
+
+                <td>
+                    ${player.elo}
+                </td>
+
+                <td>
+                    ${player.xp}
+                </td>
+
+                <td>
+                    ${player.wins}
+                </td>
+
             `;
 
-            body.appendChild(tr);
+            body.appendChild(row);
 
         });
 
@@ -1203,46 +1648,71 @@ async function loadRating(){
 }
 
 
-/* RANKS */
+/* =========================
+   RANKS
+========================= */
 
 async function loadRanks(){
 
-    const ranks=[
-        {id:'bronze',name:'BRONZE',title:'Бронзовый',price:5000},
-        {id:'silver',name:'SILVER',title:'Серебряный',price:15000},
-        {id:'gold',name:'GOLD',title:'Золотой',price:35000},
-        {id:'diamond',name:'DIAMOND',title:'Алмазный',price:75000},
-        {id:'master',name:'MASTER',title:'Мастер',price:150000},
-        {id:'astro',name:'ASTRO',title:'ASTRO ELITE',price:300000}
-    ];
+    try{
 
-    const list=document.getElementById('ranksList');
+        const data=
+            await api("/api/ranks");
 
-    list.innerHTML='';
+        const list=
+            document.getElementById(
+                "ranksList"
+            );
 
-    ranks.forEach(r=>{
+        list.innerHTML="";
 
-        const div=document.createElement('div');
+        data.ranks.forEach(rank=>{
 
-        div.className='rank';
+            const element=
+                document.createElement("div");
 
-        div.innerHTML=`
-            <div>
-                <div class="rank-name">${r.name}</div>
-                <div class="muted">${r.title}</div>
-            </div>
+            element.className="rank";
 
-            <div>
-                <b>${r.price.toLocaleString('ru-RU')} ₽</b>
-                <button onclick="buyRank('${r.id}')">
-                    Купить
-                </button>
-            </div>
-        `;
+            element.innerHTML=`
 
-        list.appendChild(div);
+                <div>
 
-    });
+                    <div class="rank-name">
+                        ${escapeHtml(rank.name)}
+                    </div>
+
+                    <div class="muted">
+                        ${escapeHtml(rank.title||"")}
+                    </div>
+
+                </div>
+
+                <div>
+
+                    <span class="rank-price">
+                        ${Number(rank.price)
+                        .toLocaleString("ru-RU")} ₽
+                    </span>
+
+                    <button
+                        class="btn"
+                        onclick="buyRank('${rank.id}')">
+                        Купить
+                    </button>
+
+                </div>
+
+            `;
+
+            list.appendChild(element);
+
+        });
+
+    }catch(e){
+
+        toast(e.message);
+
+    }
 
 }
 
@@ -1254,19 +1724,24 @@ async function buyRank(id){
         openLogin();
 
         return;
+
     }
 
     try{
 
-        const data=await api('/api/ranks/'+id+'/buy',{
-            method:'POST'
-        });
+        const data=
+            await api(
+                "/api/ranks/"+encodeURIComponent(id)+"/buy",
+                {
+                    method:"POST"
+                }
+            );
 
         currentUser=data.user;
 
-        updateProfileUI();
+        updateProfile();
 
-        toast('Ранг куплен');
+        toast("💎 Ранг куплен");
 
     }catch(e){
 
@@ -1277,58 +1752,79 @@ async function buyRank(id){
 }
 
 
-/* QUESTS */
+/* =========================
+   QUESTS
+========================= */
 
 async function loadQuests(){
 
     try{
 
-        const data=await api('/api/leaderboard');
+        const data=
+            await api("/api/quests");
 
-        const list=document.getElementById('questsList');
+        const list=
+            document.getElementById(
+                "questsList"
+            );
 
-        list.innerHTML='';
+        list.innerHTML="";
 
-        (data.quests||[]).forEach(q=>{
+        data.quests.forEach(quest=>{
 
             const claimed=
                 currentUser &&
                 currentUser.claimedQuests &&
-                currentUser.claimedQuests[q.id];
+                currentUser.claimedQuests[
+                    quest.id
+                ];
 
-            const div=document.createElement('div');
+            const element=
+                document.createElement("div");
 
-            div.className='quest';
+            element.className="quest";
 
-            div.innerHTML=`
-                <h3>${escapeHtml(q.title)}</h3>
+            element.innerHTML=`
+
+                <h3>
+                    ${escapeHtml(quest.title)}
+                </h3>
 
                 <p class="muted">
-                    ${escapeHtml(q.description||'')}
+                    ${escapeHtml(
+                        quest.description||""
+                    )}
                 </p>
 
                 <div class="row">
 
                     <span class="badge">
-                        💰 +${q.reward}
+                        💰 +${quest.reward}
                     </span>
 
                     <span class="badge">
-                        ⭐ +${q.xp} XP
+                        ⭐ +${quest.xp} XP
                     </span>
 
                     ${
                         claimed
-                        ? '<span class="badge">✅ Получено</span>'
-                        : `<button onclick="claimQuest('${q.id}')">
+                        ?
+                        `<span class="badge">
+                            ✅ Получено
+                         </span>`
+                        :
+                        `<button
+                            class="btn"
+                            onclick="claimQuest('${quest.id}')">
                             Забрать
-                          </button>`
+                         </button>`
                     }
 
                 </div>
+
             `;
 
-            list.appendChild(div);
+            list.appendChild(element);
 
         });
 
@@ -1348,23 +1844,28 @@ async function claimQuest(id){
         openLogin();
 
         return;
+
     }
 
     try{
 
-        const data=await api('/api/quests/'+id+'/claim',{
-            method:'POST'
-        });
+        const data=
+            await api(
+                "/api/quests/"+encodeURIComponent(id)+"/claim",
+                {
+                    method:"POST"
+                }
+            );
 
         currentUser=data.user;
 
-        updateProfileUI();
+        updateProfile();
 
         loadQuests();
 
         toast(
-            'Получено +'+data.reward+
-            ' ₽ и +'+data.xp+' XP'
+            "🎁 +"+data.reward+
+            " ₽ · +"+data.xp+" XP"
         );
 
     }catch(e){
@@ -1377,102 +1878,164 @@ async function claimQuest(id){
 
 
 /* =========================
-   АДМИНКА
+   ADMIN LOGIN
 ========================= */
 
-function openAdmin(){
+async function adminLogin(){
 
-    closeModals();
+    try{
 
-    document.getElementById('adminLoginModal')
-        .classList.remove('hidden');
+        const data=
+            await fetch("/api/admin/login",{
 
-}
+                method:"POST",
 
+                headers:{
+                    "Content-Type":
+                        "application/json"
+                },
 
-function adminLogin(){
+                body:JSON.stringify({
 
-    const password=
-        document.getElementById('adminPassword').value;
+                    email:
+                        document.getElementById(
+                            "adminEmail"
+                        ).value,
 
-    /*
-       ВРЕМЕННЫЙ пароль интерфейса.
-       Позже заменим на настоящую серверную
-       проверку администратора.
-    */
+                    password:
+                        document.getElementById(
+                            "adminPassword"
+                        ).value
 
-    if(password!=='astro123'){
+                })
 
-        toast('Неверный пароль');
+            });
 
-        return;
+        const result=
+            await data.json();
+
+        if(!data.ok){
+
+            throw new Error(
+                result.error||
+                "Ошибка входа"
+            );
+
+        }
+
+        adminToken=result.token;
+
+        localStorage.setItem(
+            "astro_admin_token",
+            adminToken
+        );
+
+        closeModals();
+
+        showPage("admin");
+
+        await loadAdminUsers();
+        await loadAdminRanks();
+        await loadAdminQuests();
+
+        toast("👑 Добро пожаловать, администратор");
+
+    }catch(e){
+
+        toast(e.message);
+
     }
 
-    closeModals();
-
-    showPage('admin');
-
-    loadAdminUsers();
-    loadAdminRanks();
-    loadAdminQuests();
-
-    toast('Добро пожаловать в админку');
-
 }
 
+
+/* =========================
+   ADMIN TABS
+========================= */
 
 function adminTab(tab,button){
 
-    document.querySelectorAll('.admin-section')
-        .forEach(x=>x.classList.add('hidden'));
+    document.querySelectorAll(
+        ".admin-content"
+    ).forEach(element=>{
 
-    document.getElementById('admin-'+tab)
-        .classList.remove('hidden');
+        element.classList.add("hidden");
 
-    document.querySelectorAll('.admin-tabs button')
-        .forEach(x=>x.classList.remove('active'));
+    });
 
-    button.classList.add('active');
+    document.getElementById(
+        "admin-"+tab
+    ).classList.remove("hidden");
+
+    document.querySelectorAll(
+        ".admin-tab"
+    ).forEach(element=>{
+
+        element.classList.remove("active");
+
+    });
+
+    button.classList.add("active");
 
 }
 
 
-/* ADMIN USERS */
+/* =========================
+   ADMIN USERS
+========================= */
 
 async function loadAdminUsers(){
 
     try{
 
-        const data=await api('/api/leaderboard');
+        const data=
+            await adminApi(
+                "/api/admin/users"
+            );
 
-        adminUsers=data.players||[];
+        adminUsers=data.users;
 
-        const body=document
-            .getElementById('adminUsersBody');
+        const body=
+            document.getElementById(
+                "adminUsersBody"
+            );
 
-        body.innerHTML='';
+        body.innerHTML="";
 
-        adminUsers.forEach(p=>{
+        adminUsers.forEach(player=>{
 
-            const tr=document.createElement('tr');
+            const row=
+                document.createElement("tr");
 
-            tr.innerHTML=`
+            row.innerHTML=`
+
                 <td>
-                    <b>${escapeHtml(p.username)}</b>
+                    <b>
+                        ${escapeHtml(
+                            player.username
+                        )}
+                    </b>
                 </td>
 
-                <td>${p.elo}</td>
+                <td>${player.elo}</td>
 
-                <td>${p.wins}</td>
+                <td>${player.xp}</td>
+
+                <td>${player.wins}</td>
 
                 <td>
-                    <button onclick="openPlayer('${p.id}')">
+
+                    <button
+                        class="btn"
+                        onclick="openPlayer('${player.id}')">
                         Управлять
                     </button>
+
                 </td>
+
             `;
 
-            body.appendChild(tr);
+            body.appendChild(row);
 
         });
 
@@ -1485,111 +2048,62 @@ async function loadAdminUsers(){
 }
 
 
-function openPlayer(id){
-
-    selectedPlayer=
-        adminUsers.find(x=>x.id===id);
-
-    if(!selectedPlayer){
-
-        toast('Игрок не найден');
-
-        return;
-    }
-
-    document.getElementById('selectedPlayerName')
-        .textContent=selectedPlayer.username;
-
-    document.getElementById('playerWins')
-        .value=selectedPlayer.wins||0;
-
-    document.getElementById('playerMoney')
-        .value=0;
-
-    const select=document.getElementById('playerRank');
-
-    select.innerHTML=
-        '<option value="">Без изменения</option>';
-
-    adminRanks.forEach(rank=>{
-
-        select.innerHTML+=`
-            <option value="${rank.id}">
-                ${escapeHtml(rank.name)}
-            </option>
-        `;
-
-    });
-
-    document.getElementById('playerModal')
-        .classList.remove('hidden');
-
-}
-
-
-async function givePlayerChanges(){
-
-    if(!selectedPlayer){
-
-        toast('Игрок не выбран');
-
-        return;
-    }
+async function openPlayer(id){
 
     try{
 
-        const wins=Number(
-            document.getElementById('playerWins').value
-        );
-
-        const money=Number(
-            document.getElementById('playerMoney').value
-        );
-
-        const rank=
-            document.getElementById('playerRank').value;
-
-        if(wins!==Number(selectedPlayer.wins)){
-
-            await api(
-                '/api/admin/users/'+selectedPlayer.id+'/wins',
-                {
-                    method:'POST',
-                    body:JSON.stringify({wins})
-                }
+        selectedPlayer=
+            adminUsers.find(
+                player=>player.id===id
             );
+
+        if(!selectedPlayer){
+
+            toast("Игрок не найден");
+
+            return;
 
         }
 
-        if(money!==0){
+        document.getElementById(
+            "selectedPlayerName"
+        ).textContent=
+            selectedPlayer.username;
 
-            await api(
-                '/api/admin/users/'+selectedPlayer.id+'/balance',
-                {
-                    method:'POST',
-                    body:JSON.stringify({amount:money})
-                }
+        document.getElementById(
+            "playerWins"
+        ).value=
+            selectedPlayer.wins;
+
+        document.getElementById(
+            "playerMoney"
+        ).value=0;
+
+        const select=
+            document.getElementById(
+                "playerRank"
             );
 
-        }
+        select.innerHTML=
+            `<option value="">
+                Без изменения
+             </option>`;
 
-        if(rank){
+        adminRanks.forEach(rank=>{
 
-            await api(
-                '/api/admin/users/'+selectedPlayer.id+'/rank',
-                {
-                    method:'POST',
-                    body:JSON.stringify({rankId:rank})
-                }
-            );
+            select.innerHTML+=`
 
-        }
+                <option value="${rank.id}">
+                    ${escapeHtml(rank.name)}
+                </option>
 
-        closeModals();
+            `;
 
-        loadAdminUsers();
+        });
 
-        toast('Изменения применены');
+        document.getElementById(
+            "playerModal"
+        ).classList.remove("hidden");
 
     }catch(e){
 
@@ -1600,60 +2114,87 @@ async function givePlayerChanges(){
 }
 
 
-/* ADMIN RANKS */
+async function givePlayerChanges(){
+
+    if(!selectedPlayer){
+
+        toast("Игрок не выбран");
+
+        return;
+
+    }
+
+    try{
+
+        const wins=
+            Number(
+                document.getElementById(
+                    "playerWins"
+                ).value
+            );
+
+        const money=
+            Number(
+                document.getElementById(
+                    "playerMoney"
+                ).value
+            );
+
+        const rank=
+            document.getElementById(
+                "playerRank"
+            ).value;
+
+        await adminApi(
+            "/api/admin/users/"+
+            selectedPlayer.id,
+            {
+                method:"PATCH",
+                body:JSON.stringify({
+                    wins,
+                    balanceDelta:money,
+                    rankId:rank||null
+                })
+            }
+        );
+
+        closeModals();
+
+        await loadAdminUsers();
+
+        toast("✅ Изменения применены");
+
+    }catch(e){
+
+        toast(e.message);
+
+    }
+
+}
+
+
+/* =========================
+   ADMIN RANKS
+========================= */
 
 async function loadAdminRanks(){
 
     try{
 
-        const data=await api('/api/admin/ranks');
+        const data=
+            await adminApi(
+                "/api/admin/ranks"
+            );
 
-        adminRanks=data.ranks||data||[];
+        adminRanks=data.ranks;
+
+        renderAdminRanks();
 
     }catch(e){
 
-        adminRanks=[
-            {
-                id:'bronze',
-                name:'BRONZE',
-                title:'Бронзовый',
-                price:5000
-            },
-            {
-                id:'silver',
-                name:'SILVER',
-                title:'Серебряный',
-                price:15000
-            },
-            {
-                id:'gold',
-                name:'GOLD',
-                title:'Золотой',
-                price:35000
-            },
-            {
-                id:'diamond',
-                name:'DIAMOND',
-                title:'Алмазный',
-                price:75000
-            },
-            {
-                id:'master',
-                name:'MASTER',
-                title:'Мастер',
-                price:150000
-            },
-            {
-                id:'astro',
-                name:'ASTRO',
-                title:'ASTRO ELITE',
-                price:300000
-            }
-        ];
+        toast(e.message);
 
     }
-
-    renderAdminRanks();
 
 }
 
@@ -1661,9 +2202,11 @@ async function loadAdminRanks(){
 function renderAdminRanks(){
 
     const list=
-        document.getElementById('adminRanksList');
+        document.getElementById(
+            "adminRanksList"
+        );
 
-    list.innerHTML='';
+    list.innerHTML="";
 
     adminRanks.forEach(rank=>{
 
@@ -1678,15 +2221,17 @@ function renderAdminRanks(){
                     </div>
 
                     <div class="muted">
-                        ${escapeHtml(rank.title||'')}
+                        ${escapeHtml(rank.title||"")}
                         ·
-                        ${Number(rank.price||0).toLocaleString('ru-RU')} ₽
+                        ${Number(rank.price)
+                        .toLocaleString("ru-RU")} ₽
                     </div>
 
                 </div>
 
-                <button class="red"
-                        onclick="deleteRank('${rank.id}')">
+                <button
+                    class="btn red"
+                    onclick="deleteRank('${rank.id}')">
                     Удалить
                 </button>
 
@@ -1703,31 +2248,43 @@ async function createRank(){
 
     try{
 
-        const id=
-            document.getElementById('newRankId').value.trim();
+        await adminApi(
+            "/api/admin/ranks",
+            {
+                method:"POST",
 
-        const name=
-            document.getElementById('newRankName').value.trim();
+                body:JSON.stringify({
 
-        const title=
-            document.getElementById('newRankTitle').value.trim();
+                    id:
+                        document.getElementById(
+                            "newRankId"
+                        ).value.trim(),
 
-        const price=
-            Number(document.getElementById('newRankPrice').value);
+                    name:
+                        document.getElementById(
+                            "newRankName"
+                        ).value.trim(),
 
-        await api('/api/admin/ranks',{
-            method:'POST',
-            body:JSON.stringify({
-                id,
-                name,
-                title,
-                price
-            })
-        });
+                    title:
+                        document.getElementById(
+                            "newRankTitle"
+                        ).value.trim(),
 
-        toast('Ранг создан');
+                    price:
+                        Number(
+                            document.getElementById(
+                                "newRankPrice"
+                            ).value
+                        )
 
-        loadAdminRanks();
+                })
+
+            }
+        );
+
+        await loadAdminRanks();
+
+        toast("💎 Ранг создан");
 
     }catch(e){
 
@@ -1740,17 +2297,23 @@ async function createRank(){
 
 async function deleteRank(id){
 
-    if(!confirm('Удалить ранг?')) return;
+    if(!confirm(
+        "Удалить этот ранг?"
+    )) return;
 
     try{
 
-        await api('/api/admin/ranks/'+id,{
-            method:'DELETE'
-        });
+        await adminApi(
+            "/api/admin/ranks/"+
+            encodeURIComponent(id),
+            {
+                method:"DELETE"
+            }
+        );
 
-        toast('Ранг удалён');
+        await loadAdminRanks();
 
-        loadAdminRanks();
+        toast("🗑️ Ранг удалён");
 
     }catch(e){
 
@@ -1761,33 +2324,28 @@ async function deleteRank(id){
 }
 
 
-/* ADMIN QUESTS */
+/* =========================
+   ADMIN QUESTS
+========================= */
 
 async function loadAdminQuests(){
 
     try{
 
-        const data=await api('/api/admin/quests');
+        const data=
+            await adminApi(
+                "/api/admin/quests"
+            );
 
-        adminQuests=data.quests||data||[];
+        adminQuests=data.quests;
+
+        renderAdminQuests();
 
     }catch(e){
 
-        try{
-
-            const data=await api('/api/leaderboard');
-
-            adminQuests=data.quests||[];
-
-        }catch(err){
-
-            adminQuests=[];
-
-        }
+        toast(e.message);
 
     }
-
-    renderAdminQuests();
 
 }
 
@@ -1795,36 +2353,43 @@ async function loadAdminQuests(){
 function renderAdminQuests(){
 
     const list=
-        document.getElementById('adminQuestsList');
+        document.getElementById(
+            "adminQuestsList"
+        );
 
-    list.innerHTML='';
+    list.innerHTML="";
 
-    adminQuests.forEach(q=>{
+    adminQuests.forEach(quest=>{
 
         list.innerHTML+=`
 
             <div class="quest">
 
                 <h3>
-                    ${escapeHtml(q.title)}
+                    ${escapeHtml(
+                        quest.title
+                    )}
                 </h3>
 
                 <p class="muted">
-                    ${escapeHtml(q.description||'')}
+                    ${escapeHtml(
+                        quest.description||""
+                    )}
                 </p>
 
                 <div class="row">
 
                     <span class="badge">
-                        💰 ${q.reward}
+                        💰 ${quest.reward}
                     </span>
 
                     <span class="badge">
-                        ⭐ ${q.xp} XP
+                        ⭐ ${quest.xp} XP
                     </span>
 
-                    <button class="red"
-                            onclick="deleteQuest('${q.id}')">
+                    <button
+                        class="btn red"
+                        onclick="deleteQuest('${quest.id}')">
                         Удалить
                     </button>
 
@@ -1843,35 +2408,50 @@ async function createQuest(){
 
     try{
 
-        const id=
-            document.getElementById('newQuestId').value.trim();
+        await adminApi(
+            "/api/admin/quests",
+            {
+                method:"POST",
 
-        const title=
-            document.getElementById('newQuestTitle').value.trim();
+                body:JSON.stringify({
 
-        const description=
-            document.getElementById('newQuestDescription').value.trim();
+                    id:
+                        document.getElementById(
+                            "newQuestId"
+                        ).value.trim(),
 
-        const reward=
-            Number(document.getElementById('newQuestReward').value);
+                    title:
+                        document.getElementById(
+                            "newQuestTitle"
+                        ).value.trim(),
 
-        const xp=
-            Number(document.getElementById('newQuestXp').value);
+                    description:
+                        document.getElementById(
+                            "newQuestDescription"
+                        ).value.trim(),
 
-        await api('/api/admin/quests',{
-            method:'POST',
-            body:JSON.stringify({
-                id,
-                title,
-                description,
-                reward,
-                xp
-            })
-        });
+                    reward:
+                        Number(
+                            document.getElementById(
+                                "newQuestReward"
+                            ).value
+                        ),
 
-        toast('Квест создан');
+                    xp:
+                        Number(
+                            document.getElementById(
+                                "newQuestXp"
+                            ).value
+                        )
 
-        loadAdminQuests();
+                })
+
+            }
+        );
+
+        await loadAdminQuests();
+
+        toast("📜 Квест создан");
 
     }catch(e){
 
@@ -1884,17 +2464,23 @@ async function createQuest(){
 
 async function deleteQuest(id){
 
-    if(!confirm('Удалить квест?')) return;
+    if(!confirm(
+        "Удалить этот квест?"
+    )) return;
 
     try{
 
-        await api('/api/admin/quests/'+id,{
-            method:'DELETE'
-        });
+        await adminApi(
+            "/api/admin/quests/"+
+            encodeURIComponent(id),
+            {
+                method:"DELETE"
+            }
+        );
 
-        toast('Квест удалён');
+        await loadAdminQuests();
 
-        loadAdminQuests();
+        toast("🗑️ Квест удалён");
 
     }catch(e){
 
@@ -1905,25 +2491,29 @@ async function deleteQuest(id){
 }
 
 
-/* ESCAPE */
+/* =========================
+   ESCAPE
+========================= */
 
 function escapeHtml(value){
 
-    return String(value??'')
-        .replaceAll('&','&amp;')
-        .replaceAll('<','&lt;')
-        .replaceAll('>','&gt;')
-        .replaceAll('"','&quot;')
+    return String(value??"")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
         .replaceAll("'","&#039;");
 
 }
 
 
-/* START */
+/* =========================
+   START
+========================= */
 
 loadMe();
 
-showPage('home');
+showPage("home");
 
 </script>
 

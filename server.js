@@ -1,35 +1,30 @@
-require('dotenv').config();
+require("dotenv").config();
 
-const path = require('path');
-const express = require('express');
-const http = require('http');
-const { Server } = require('socket.io');
-const { Pool } = require('pg');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+const path = require("path");
+const express = require("express");
+const http = require("http");
+const { Server } = require("socket.io");
+const { Pool } = require("pg");
+const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const PORT = Number(process.env.PORT || 3000);
-
 const DATABASE_URL = process.env.DATABASE_URL;
 
 const JWT_SECRET =
     process.env.JWT_SECRET ||
-    'astro-super-secret-change-this';
+    "astro-secret-change-this";
 
 const ADMIN_EMAIL =
     process.env.ADMIN_EMAIL ||
-    'admin@astro.local';
+    "admin@astro.online";
 
 const ADMIN_PASSWORD =
     process.env.ADMIN_PASSWORD ||
-    'admin12345';
+    "admin123";
 
 if (!DATABASE_URL) {
-    console.error('DATABASE_URL не задан!');
+    console.error("DATABASE_URL не найден в Environment.");
 }
 
 const pool = new Pool({
@@ -38,98 +33,18 @@ const pool = new Pool({
         DATABASE_URL &&
         /localhost|127\.0\.0\.1/.test(DATABASE_URL)
             ? false
-            : { rejectUnauthorized: false }
+            : {
+                rejectUnauthorized: false
+            }
 });
 
-app.use(express.json({ limit: '2mb' }));
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-app.use(
-    express.static(
-        path.join(__dirname, 'public')
-    )
-);
+app.use(express.json({ limit: "2mb" }));
+app.use(express.static(path.join(__dirname, "public")));
 
-/* =========================================================
-   DEFAULT DATA
-========================================================= */
-
-const DEFAULT_RANKS = [
-    {
-        rankId: 'bronze',
-        name: 'BRONZE',
-        title: 'Бронзовый',
-        price: 5000,
-        color: '#cd7f32',
-        icon: '◆'
-    },
-    {
-        rankId: 'silver',
-        name: 'SILVER',
-        title: 'Серебряный',
-        price: 15000,
-        color: '#b9c3d0',
-        icon: '◇'
-    },
-    {
-        rankId: 'gold',
-        name: 'GOLD',
-        title: 'Золотой',
-        price: 35000,
-        color: '#ffd45a',
-        icon: '✦'
-    },
-    {
-        rankId: 'diamond',
-        name: 'DIAMOND',
-        title: 'Алмазный',
-        price: 75000,
-        color: '#6ee7ff',
-        icon: '✧'
-    },
-    {
-        rankId: 'master',
-        name: 'MASTER',
-        title: 'Мастер',
-        price: 150000,
-        color: '#c084fc',
-        icon: '✹'
-    },
-    {
-        rankId: 'astro',
-        name: 'ASTRO',
-        title: 'ASTRO ELITE',
-        price: 300000,
-        color: '#ff6bd6',
-        icon: '★'
-    }
-];
-
-const DEFAULT_QUESTS = [
-    {
-        questId: 'daily-login',
-        title: 'Войти в систему',
-        description:
-            'Открой профиль и забери ежедневную награду.',
-        reward: 50,
-        xp: 25
-    },
-    {
-        questId: 'daily-explore',
-        title: 'Исследователь',
-        description:
-            'Посети разделы ASTRO и изучи новый сезон.',
-        reward: 100,
-        xp: 50
-    },
-    {
-        questId: 'daily-elite',
-        title: 'Elite Protocol',
-        description:
-            'Выполни особое задание сезона.',
-        reward: 250,
-        xp: 100
-    }
-];
 
 /* =========================================================
    DATABASE
@@ -137,275 +52,341 @@ const DEFAULT_QUESTS = [
 
 async function initDatabase() {
 
-    if (!DATABASE_URL) {
-        throw new Error(
-            'DATABASE_URL не задан в Environment Variables.'
-        );
-    }
+    /*
+     * USERS
+     */
 
     await pool.query(`
         CREATE EXTENSION IF NOT EXISTS pgcrypto
     `);
 
-    /*
-        USERS
-    */
-
     await pool.query(`
         CREATE TABLE IF NOT EXISTS users (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
+            id UUID PRIMARY KEY,
             email TEXT UNIQUE NOT NULL,
-
             username TEXT UNIQUE NOT NULL,
-
             password_hash TEXT NOT NULL,
 
             balance BIGINT NOT NULL DEFAULT 1000,
-
             xp BIGINT NOT NULL DEFAULT 0,
-
             elo BIGINT NOT NULL DEFAULT 1000,
-
             wins BIGINT NOT NULL DEFAULT 0,
 
             owned_ranks JSONB NOT NULL DEFAULT '[]'::jsonb,
-
             claimed_quests JSONB NOT NULL DEFAULT '{}'::jsonb,
-
             history JSONB NOT NULL DEFAULT '[]'::jsonb,
 
-            is_admin BOOLEAN NOT NULL DEFAULT false,
-
             created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-
             last_login_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
     `);
 
+
     /*
-        RANKS
-    */
+     * RANKS
+     *
+     * ВАЖНО:
+     * Эта часть специально исправляет твою ошибку:
+     *
+     * column "rank_id" of relation "ranks" does not exist
+     */
 
     await pool.query(`
         CREATE TABLE IF NOT EXISTS ranks (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
-            rank_id TEXT UNIQUE NOT NULL,
-
-            name TEXT NOT NULL,
-
-            title TEXT NOT NULL,
-
+            id SERIAL PRIMARY KEY,
+            rank_id TEXT UNIQUE,
+            name TEXT NOT NULL DEFAULT 'RANK',
+            title TEXT NOT NULL DEFAULT 'Ранг',
             price BIGINT NOT NULL DEFAULT 0,
-
             color TEXT NOT NULL DEFAULT '#ffffff',
-
             icon TEXT NOT NULL DEFAULT '★',
-
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
     `);
 
+
     /*
-        QUESTS
-    */
+     * МИГРАЦИЯ СТАРОЙ ТАБЛИЦЫ RANKS
+     */
+
+    await pool.query(`
+        ALTER TABLE ranks
+        ADD COLUMN IF NOT EXISTS rank_id TEXT
+    `);
+
+    await pool.query(`
+        ALTER TABLE ranks
+        ADD COLUMN IF NOT EXISTS name TEXT
+    `);
+
+    await pool.query(`
+        ALTER TABLE ranks
+        ADD COLUMN IF NOT EXISTS title TEXT
+    `);
+
+    await pool.query(`
+        ALTER TABLE ranks
+        ADD COLUMN IF NOT EXISTS price BIGINT DEFAULT 0
+    `);
+
+    await pool.query(`
+        ALTER TABLE ranks
+        ADD COLUMN IF NOT EXISTS color TEXT DEFAULT '#ffffff'
+    `);
+
+    await pool.query(`
+        ALTER TABLE ranks
+        ADD COLUMN IF NOT EXISTS icon TEXT DEFAULT '★'
+    `);
+
+    await pool.query(`
+        ALTER TABLE ranks
+        ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT now()
+    `);
+
+
+    /*
+     * Старым рангам выдаём ID
+     */
+
+    await pool.query(`
+        UPDATE ranks
+        SET rank_id = 'rank-' || id
+        WHERE rank_id IS NULL
+           OR rank_id = ''
+    `);
+
+    await pool.query(`
+        UPDATE ranks
+        SET name = 'RANK-' || id
+        WHERE name IS NULL
+           OR name = ''
+    `);
+
+    await pool.query(`
+        UPDATE ranks
+        SET title = name
+        WHERE title IS NULL
+           OR title = ''
+    `);
+
+    await pool.query(`
+        UPDATE ranks
+        SET price = 0
+        WHERE price IS NULL
+    `);
+
+    await pool.query(`
+        UPDATE ranks
+        SET color = '#ffffff'
+        WHERE color IS NULL
+           OR color = ''
+    `);
+
+    await pool.query(`
+        UPDATE ranks
+        SET icon = '★'
+        WHERE icon IS NULL
+           OR icon = ''
+    `);
+
+    await pool.query(`
+        UPDATE ranks
+        SET created_at = now()
+        WHERE created_at IS NULL
+    `);
+
+
+    /*
+     * Уникальный индекс
+     */
+
+    await pool.query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS
+        ranks_rank_id_unique
+        ON ranks(rank_id)
+    `);
+
+
+    /*
+     * QUESTS
+     */
 
     await pool.query(`
         CREATE TABLE IF NOT EXISTS quests (
-            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-
+            id SERIAL PRIMARY KEY,
             quest_id TEXT UNIQUE NOT NULL,
-
             title TEXT NOT NULL,
-
             description TEXT NOT NULL DEFAULT '',
-
             reward BIGINT NOT NULL DEFAULT 0,
-
             xp BIGINT NOT NULL DEFAULT 0,
-
             created_at TIMESTAMPTZ NOT NULL DEFAULT now()
         )
     `);
 
-    /*
-        MIGRATION:
-        если users была создана старой версией
-    */
-
-    await pool.query(`
-        ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT false
-    `);
-
-    await pool.query(`
-        ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS balance BIGINT NOT NULL DEFAULT 1000
-    `);
-
-    await pool.query(`
-        ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS xp BIGINT NOT NULL DEFAULT 0
-    `);
-
-    await pool.query(`
-        ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS elo BIGINT NOT NULL DEFAULT 1000
-    `);
-
-    await pool.query(`
-        ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS wins BIGINT NOT NULL DEFAULT 0
-    `);
-
-    await pool.query(`
-        ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS owned_ranks JSONB NOT NULL DEFAULT '[]'::jsonb
-    `);
-
-    await pool.query(`
-        ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS claimed_quests JSONB NOT NULL DEFAULT '{}'::jsonb
-    `);
-
-    await pool.query(`
-        ALTER TABLE users
-        ADD COLUMN IF NOT EXISTS history JSONB NOT NULL DEFAULT '[]'::jsonb
-    `);
 
     /*
-        DEFAULT RANKS
-    */
+     * Если квестов нет — создаём стандартные
+     */
 
-    for (const rank of DEFAULT_RANKS) {
+    const questsCount = await pool.query(`
+        SELECT COUNT(*)::int AS count
+        FROM quests
+    `);
 
-        await pool.query(
-            `
-            INSERT INTO ranks
-                (rank_id,name,title,price,color,icon)
-            VALUES
-                ($1,$2,$3,$4,$5,$6)
-            ON CONFLICT (rank_id)
-            DO NOTHING
-            `,
-            [
-                rank.rankId,
-                rank.name,
-                rank.title,
-                rank.price,
-                rank.color,
-                rank.icon
-            ]
-        );
-    }
+    if (questsCount.rows[0].count === 0) {
 
-    /*
-        DEFAULT QUESTS
-    */
-
-    for (const quest of DEFAULT_QUESTS) {
-
-        await pool.query(
-            `
+        await pool.query(`
             INSERT INTO quests
-                (quest_id,title,description,reward,xp)
+                (quest_id, title, description, reward, xp)
             VALUES
-                ($1,$2,$3,$4,$5)
-            ON CONFLICT (quest_id)
-            DO NOTHING
-            `,
-            [
-                quest.questId,
-                quest.title,
-                quest.description,
-                quest.reward,
-                quest.xp
-            ]
-        );
+                (
+                    'daily-login',
+                    'Войти в систему',
+                    'Открой профиль и забери ежедневную награду.',
+                    50,
+                    25
+                ),
+                (
+                    'daily-explore',
+                    'Исследователь',
+                    'Посети разделы ASTRO и изучи новый сезон.',
+                    100,
+                    50
+                ),
+                (
+                    'daily-elite',
+                    'Elite Protocol',
+                    'Выполни особое задание сезона.',
+                    250,
+                    100
+                )
+        `);
     }
 
+
     /*
-        ADMIN ACCOUNT
+     * Если рангов нет — создаём стандартные
+     */
 
-        Если его нет — создаём автоматически.
-    */
+    const ranksCount = await pool.query(`
+        SELECT COUNT(*)::int AS count
+        FROM ranks
+    `);
 
-    const adminHash =
-        await bcrypt.hash(
-            ADMIN_PASSWORD,
-            12
-        );
+    if (ranksCount.rows[0].count === 0) {
 
-    const adminResult =
-        await pool.query(
-            `
-            SELECT id
-            FROM users
-            WHERE lower(email)=lower($1)
-            LIMIT 1
-            `,
-            [ADMIN_EMAIL]
-        );
+        await pool.query(`
+            INSERT INTO
+                ranks
+                (rank_id, name, title, price, color, icon)
+            VALUES
+                (
+                    'bronze',
+                    'BRONZE',
+                    'Бронзовый',
+                    5000,
+                    '#cd7f32',
+                    '◆'
+                ),
+                (
+                    'silver',
+                    'SILVER',
+                    'Серебряный',
+                    15000,
+                    '#b9c3d0',
+                    '◇'
+                ),
+                (
+                    'gold',
+                    'GOLD',
+                    'Золотой',
+                    35000,
+                    '#ffd45a',
+                    '✦'
+                ),
+                (
+                    'diamond',
+                    'DIAMOND',
+                    'Алмазный',
+                    75000,
+                    '#6ee7ff',
+                    '✧'
+                ),
+                (
+                    'master',
+                    'MASTER',
+                    'Мастер',
+                    150000,
+                    '#c084fc',
+                    '✹'
+                ),
+                (
+                    'astro',
+                    'ASTRO',
+                    'ASTRO ELITE',
+                    300000,
+                    '#ff6bd6',
+                    '★'
+                )
+        `);
+    }
 
-    if (!adminResult.rows.length) {
 
-        await pool.query(
-            `
-            INSERT INTO users
-            (
+    /*
+     * ADMIN
+     *
+     * Админ создаётся автоматически.
+     */
+
+    const adminExists = await pool.query(`
+        SELECT id
+        FROM users
+        WHERE lower(email) = lower($1)
+        LIMIT 1
+    `, [ADMIN_EMAIL]);
+
+    if (!adminExists.rows.length) {
+
+        const passwordHash =
+            await bcrypt.hash(ADMIN_PASSWORD, 12);
+
+        await pool.query(`
+            INSERT INTO users (
+                id,
                 email,
                 username,
                 password_hash,
                 balance,
                 xp,
                 elo,
-                wins,
-                is_admin
+                wins
             )
-            VALUES
-            (
+            VALUES (
+                gen_random_uuid(),
                 $1,
+                'ADMIN',
                 $2,
-                $3,
-                1000000,
-                100000,
-                99999,
-                9999,
-                true
+                999999999,
+                999999999,
+                999999,
+                999999
             )
-            `,
-            [
-                ADMIN_EMAIL,
-                'ASTRO_ADMIN',
-                adminHash
-            ]
-        );
+        `, [
+            ADMIN_EMAIL,
+            passwordHash
+        ]);
 
-        console.log(
-            'ADMIN ACCOUNT CREATED:',
-            ADMIN_EMAIL
-        );
-
-    } else {
-
-        await pool.query(
-            `
-            UPDATE users
-            SET
-                is_admin=true,
-                password_hash=$1
-            WHERE lower(email)=lower($2)
-            `,
-            [
-                adminHash,
-                ADMIN_EMAIL
-            ]
-        );
+        console.log("=================================");
+        console.log("ASTRO ADMIN CREATED");
+        console.log("Email:", ADMIN_EMAIL);
+        console.log("Password:", ADMIN_PASSWORD);
+        console.log("=================================");
     }
 
-    console.log('ASTRO DATABASE READY');
+    console.log("ASTRO DATABASE READY");
 }
+
 
 /* =========================================================
    HELPERS
@@ -419,32 +400,28 @@ function publicUser(user) {
         username: user.username,
 
         balance: Number(user.balance || 0),
-
         xp: Number(user.xp || 0),
-
         elo: Number(user.elo || 0),
-
         wins: Number(user.wins || 0),
 
         ownedRanks:
-            user.owned_ranks || [],
+            Array.isArray(user.owned_ranks)
+                ? user.owned_ranks
+                : [],
 
         claimedQuests:
             user.claimed_quests || {},
 
         history:
-            user.history || [],
+            Array.isArray(user.history)
+                ? user.history
+                : [],
 
-        isAdmin:
-            Boolean(user.is_admin),
-
-        createdAt:
-            user.created_at,
-
-        lastLoginAt:
-            user.last_login_at
+        createdAt: user.created_at,
+        lastLoginAt: user.last_login_at
     };
 }
+
 
 function tokenFor(user) {
 
@@ -454,25 +431,19 @@ function tokenFor(user) {
         },
         JWT_SECRET,
         {
-            expiresIn: '30d'
+            expiresIn: "30d"
         }
     );
 }
 
-async function getUserById(id) {
 
-    const result =
-        await pool.query(
-            `
-            SELECT *
-            FROM users
-            WHERE id=$1
-            `,
-            [id]
-        );
+function broadcast() {
 
-    return result.rows[0];
+    io.emit("leaderboard:update");
+    io.emit("ranks:update");
+    io.emit("quests:update");
 }
+
 
 /* =========================================================
    AUTH
@@ -483,12 +454,12 @@ async function auth(req, res, next) {
     try {
 
         const header =
-            req.headers.authorization || '';
+            req.headers.authorization || "";
 
-        if (!header.startsWith('Bearer ')) {
+        if (!header.startsWith("Bearer ")) {
 
             return res.status(401).json({
-                error: 'Требуется вход.'
+                error: "Требуется вход."
             });
         }
 
@@ -501,345 +472,285 @@ async function auth(req, res, next) {
                 JWT_SECRET
             );
 
-        const user =
-            await getUserById(
-                payload.id
+        const result =
+            await pool.query(
+                `
+                SELECT *
+                FROM users
+                WHERE id = $1
+                `,
+                [payload.id]
             );
 
-        if (!user) {
+        if (!result.rows[0]) {
 
             return res.status(401).json({
-                error: 'Пользователь не найден.'
+                error: "Пользователь не найден."
             });
         }
 
-        req.user = user;
+        req.user = result.rows[0];
 
         next();
 
     } catch (error) {
 
         return res.status(401).json({
-            error: 'Сессия недействительна.'
+            error: "Сессия недействительна."
         });
     }
 }
 
-async function adminAuth(
-    req,
-    res,
-    next
-) {
 
-    try {
+async function adminAuth(req, res, next) {
 
-        await auth(
-            req,
-            res,
-            async () => {
+    await auth(req, res, async () => {
 
-                if (!req.user.is_admin) {
+        if (
+            String(req.user.email).toLowerCase() !==
+            String(ADMIN_EMAIL).toLowerCase()
+        ) {
 
-                    return res.status(403).json({
-                        error:
-                            'Доступ разрешён только администратору.'
-                    });
-                }
+            return res.status(403).json({
+                error: "Доступ только для администратора."
+            });
+        }
 
-                next();
-            }
-        );
-
-    } catch (error) {
-
-        return res.status(403).json({
-            error: 'Нет доступа.'
-        });
-    }
+        next();
+    });
 }
 
-/* =========================================================
-   SOCKET
-========================================================= */
-
-function broadcastAll() {
-
-    io.emit(
-        'leaderboard:update'
-    );
-
-    io.emit(
-        'ranks:update'
-    );
-
-    io.emit(
-        'quests:update'
-    );
-}
-
-/* =========================================================
-   BASIC
-========================================================= */
-
-app.get(
-    '/api/status',
-    (req, res) => {
-
-        res.json({
-            online: true,
-            name: 'ASTRO ONLINE'
-        });
-    }
-);
 
 /* =========================================================
    AUTH API
 ========================================================= */
 
-app.post(
-    '/api/register',
-    async (req, res) => {
+app.get("/api/me", auth, (req, res) => {
 
-        try {
+    res.json({
+        user: publicUser(req.user)
+    });
+});
 
-            const {
-                username,
-                email,
-                password
-            } = req.body || {};
 
-            const n =
-                String(
-                    username || ''
-                ).trim();
+app.post("/api/register", async (req, res) => {
 
-            const e =
-                String(
-                    email || ''
-                )
-                    .trim()
-                    .toLowerCase();
+    try {
 
-            const p =
-                String(
-                    password || ''
-                );
+        const {
+            username,
+            email,
+            password
+        } = req.body || {};
 
-            if (
-                !/^[a-zA-Zа-яА-ЯёЁ0-9_ -]{3,20}$/.test(
-                    n
-                )
-            ) {
+        const e =
+            String(email || "")
+                .trim()
+                .toLowerCase();
 
-                return res.status(400).json({
-                    error:
-                        'Никнейм должен содержать 3–20 символов.'
-                });
-            }
+        const n =
+            String(username || "")
+                .trim();
 
-            if (
-                !/^\S+@\S+\.\S+$/.test(e)
-            ) {
+        const p =
+            String(password || "");
 
-                return res.status(400).json({
-                    error:
-                        'Введите корректный email.'
-                });
-            }
 
-            if (p.length < 8) {
+        if (
+            !/^\S+@\S+\.\S+$/.test(e)
+        ) {
 
-                return res.status(400).json({
-                    error:
-                        'Пароль должен содержать минимум 8 символов.'
-                });
-            }
-
-            const exists =
-                await pool.query(
-                    `
-                    SELECT id
-                    FROM users
-                    WHERE
-                        lower(email)=lower($1)
-                        OR lower(username)=lower($2)
-                    LIMIT 1
-                    `,
-                    [e, n]
-                );
-
-            if (exists.rows.length) {
-
-                return res.status(409).json({
-                    error:
-                        'Email или никнейм уже занят.'
-                });
-            }
-
-            const hash =
-                await bcrypt.hash(
-                    p,
-                    12
-                );
-
-            const result =
-                await pool.query(
-                    `
-                    INSERT INTO users
-                    (
-                        email,
-                        username,
-                        password_hash
-                    )
-                    VALUES
-                    ($1,$2,$3)
-                    RETURNING *
-                    `,
-                    [
-                        e,
-                        n,
-                        hash
-                    ]
-                );
-
-            const user =
-                result.rows[0];
-
-            broadcastAll();
-
-            res.json({
-                token:
-                    tokenFor(user),
-
-                user:
-                    publicUser(user)
-            });
-
-        } catch (error) {
-
-            console.error(
-                'REGISTER ERROR:',
-                error
-            );
-
-            res.status(500).json({
-                error:
-                    'Не удалось создать аккаунт.'
+            return res.status(400).json({
+                error: "Введите корректный email."
             });
         }
-    }
-);
 
-app.post(
-    '/api/login',
-    async (req, res) => {
 
-        try {
+        if (
+            !/^[a-zA-Zа-яА-ЯёЁ0-9_ -]{3,20}$/.test(n)
+        ) {
 
-            const {
-                email,
-                password
-            } = req.body || {};
+            return res.status(400).json({
+                error: "Никнейм: 3–20 символов."
+            });
+        }
 
-            const e =
-                String(
-                    email || ''
+
+        if (p.length < 8) {
+
+            return res.status(400).json({
+                error:
+                    "Пароль должен содержать минимум 8 символов."
+            });
+        }
+
+
+        const exists =
+            await pool.query(
+                `
+                SELECT 1
+                FROM users
+                WHERE lower(email) = lower($1)
+                   OR lower(username) = lower($2)
+                `,
+                [e, n]
+            );
+
+
+        if (exists.rowCount) {
+
+            return res.status(409).json({
+                error:
+                    "Email или никнейм уже занят."
+            });
+        }
+
+
+        const hash =
+            await bcrypt.hash(p, 12);
+
+
+        const result =
+            await pool.query(
+                `
+                INSERT INTO users (
+                    id,
+                    email,
+                    username,
+                    password_hash
                 )
-                    .trim()
-                    .toLowerCase();
+                VALUES (
+                    gen_random_uuid(),
+                    $1,
+                    $2,
+                    $3
+                )
+                RETURNING *
+                `,
+                [
+                    e,
+                    n,
+                    hash
+                ]
+            );
 
-            const p =
-                String(
-                    password || ''
-                );
 
-            const result =
+        const user =
+            result.rows[0];
+
+        broadcast();
+
+        res.json({
+            token: tokenFor(user),
+            user: publicUser(user)
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            error:
+                "Не удалось создать аккаунт."
+        });
+    }
+});
+
+
+app.post("/api/login", async (req, res) => {
+
+    try {
+
+        const {
+            email,
+            password
+        } = req.body || {};
+
+        const e =
+            String(email || "")
+                .trim()
+                .toLowerCase();
+
+        const p =
+            String(password || "");
+
+
+        const result =
+            await pool.query(
+                `
+                SELECT *
+                FROM users
+                WHERE lower(email) = lower($1)
+                LIMIT 1
+                `,
+                [e]
+            );
+
+
+        const user =
+            result.rows[0];
+
+
+        if (
+            !user ||
+            !(await bcrypt.compare(
+                p,
+                user.password_hash
+            ))
+        ) {
+
+            return res.status(401).json({
+                error:
+                    "Неверный email или пароль."
+            });
+        }
+
+
+        await pool.query(
+            `
+            UPDATE users
+            SET last_login_at = now()
+            WHERE id = $1
+            `,
+            [user.id]
+        );
+
+
+        const fresh =
+            (
                 await pool.query(
                     `
                     SELECT *
                     FROM users
-                    WHERE lower(email)=lower($1)
-                    LIMIT 1
+                    WHERE id = $1
                     `,
-                    [e]
-                );
+                    [user.id]
+                )
+            ).rows[0];
 
-            const user =
-                result.rows[0];
-
-            if (
-                !user ||
-                !(await bcrypt.compare(
-                    p,
-                    user.password_hash
-                ))
-            ) {
-
-                return res.status(401).json({
-                    error:
-                        'Неверный email или пароль.'
-                });
-            }
-
-            await pool.query(
-                `
-                UPDATE users
-                SET last_login_at=now()
-                WHERE id=$1
-                `,
-                [user.id]
-            );
-
-            const fresh =
-                await getUserById(
-                    user.id
-                );
-
-            res.json({
-                token:
-                    tokenFor(fresh),
-
-                user:
-                    publicUser(fresh)
-            });
-
-        } catch (error) {
-
-            console.error(
-                'LOGIN ERROR:',
-                error
-            );
-
-            res.status(500).json({
-                error:
-                    'Ошибка входа.'
-            });
-        }
-    }
-);
-
-/* =========================================================
-   ME
-========================================================= */
-
-app.get(
-    '/api/me',
-    auth,
-    (req, res) => {
 
         res.json({
-            user:
-                publicUser(req.user)
+            token: tokenFor(fresh),
+            user: publicUser(fresh)
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        res.status(500).json({
+            error: "Ошибка входа."
         });
     }
-);
+});
+
 
 /* =========================================================
    PROFILE
 ========================================================= */
 
 app.put(
-    '/api/profile',
+    "/api/profile",
     auth,
     async (req, res) => {
 
@@ -847,8 +758,9 @@ app.put(
 
             const username =
                 String(
-                    req.body?.username || ''
+                    req.body?.username || ""
                 ).trim();
+
 
             if (
                 !/^[a-zA-Zа-яА-ЯёЁ0-9_ -]{3,20}$/.test(
@@ -858,19 +770,19 @@ app.put(
 
                 return res.status(400).json({
                     error:
-                        'Никнейм должен содержать 3–20 символов.'
+                        "Никнейм: 3–20 символов."
                 });
             }
+
 
             const duplicate =
                 await pool.query(
                     `
-                    SELECT id
+                    SELECT 1
                     FROM users
-                    WHERE
-                        lower(username)=lower($1)
-                        AND id<>$2
-                    LIMIT 1
+                    WHERE lower(username) =
+                          lower($1)
+                      AND id <> $2
                     `,
                     [
                         username,
@@ -878,20 +790,22 @@ app.put(
                     ]
                 );
 
-            if (duplicate.rows.length) {
+
+            if (duplicate.rowCount) {
 
                 return res.status(409).json({
                     error:
-                        'Такой никнейм уже занят.'
+                        "Такой никнейм уже занят."
                 });
             }
+
 
             const result =
                 await pool.query(
                     `
                     UPDATE users
-                    SET username=$1
-                    WHERE id=$2
+                    SET username = $1
+                    WHERE id = $2
                     RETURNING *
                     `,
                     [
@@ -900,7 +814,8 @@ app.put(
                     ]
                 );
 
-            broadcastAll();
+
+            broadcast();
 
             res.json({
                 user:
@@ -911,89 +826,69 @@ app.put(
 
         } catch (error) {
 
-            console.error(
-                'PROFILE ERROR:',
-                error
-            );
+            console.error(error);
 
             res.status(500).json({
                 error:
-                    'Не удалось сохранить профиль.'
+                    "Не удалось сохранить профиль."
             });
         }
     }
 );
+
 
 /* =========================================================
    RANKS
 ========================================================= */
 
-app.get(
-    '/api/ranks',
-    async (req, res) => {
+app.get("/api/ranks", async (req, res) => {
 
-        try {
+    try {
 
-            const result =
-                await pool.query(
-                    `
-                    SELECT *
-                    FROM ranks
-                    ORDER BY price ASC, created_at ASC
-                    `
-                );
+        const result =
+            await pool.query(`
+                SELECT
+                    id,
+                    rank_id,
+                    name,
+                    title,
+                    price,
+                    color,
+                    icon,
+                    created_at
+                FROM ranks
+                ORDER BY price ASC, id ASC
+            `);
 
-            res.json({
-                ranks:
-                    result.rows.map(
-                        rank => ({
-                            id:
-                                rank.id,
 
-                            rankId:
-                                rank.rank_id,
+        res.json({
+            ranks:
+                result.rows.map(rank => ({
+                    id: rank.id,
+                    rankId: rank.rank_id,
+                    name: rank.name,
+                    title: rank.title,
+                    price: Number(rank.price),
+                    color: rank.color,
+                    icon: rank.icon,
+                    createdAt: rank.created_at
+                }))
+        });
 
-                            name:
-                                rank.name,
+    } catch (error) {
 
-                            title:
-                                rank.title,
+        console.error("RANKS ERROR:", error);
 
-                            price:
-                                Number(
-                                    rank.price
-                                ),
-
-                            color:
-                                rank.color,
-
-                            icon:
-                                rank.icon
-                        })
-                    )
-            });
-
-        } catch (error) {
-
-            console.error(
-                'RANKS ERROR:',
-                error
-            );
-
-            res.status(500).json({
-                error:
-                    'Не удалось загрузить ранги.'
-            });
-        }
+        res.status(500).json({
+            error:
+                "Ошибка загрузки рангов."
+        });
     }
-);
+});
 
-/* =========================================================
-   BUY RANK
-========================================================= */
 
 app.post(
-    '/api/ranks/:id/buy',
+    "/api/ranks/:id/buy",
     auth,
     async (req, res) => {
 
@@ -1002,54 +897,54 @@ app.post(
 
         try {
 
+            await client.query("BEGIN");
+
+
             const rankResult =
                 await client.query(
                     `
                     SELECT *
                     FROM ranks
-                    WHERE
-                        rank_id=$1
-                        OR id::text=$1
-                    LIMIT 1
+                    WHERE rank_id = $1
+                    FOR SHARE
                     `,
                     [req.params.id]
                 );
 
+
             const rank =
                 rankResult.rows[0];
 
+
             if (!rank) {
 
-                return res.status(404).json({
-                    error:
-                        'Ранг не найден.'
-                });
+                throw new Error(
+                    "Ранг не найден."
+                );
             }
 
-            await client.query(
-                'BEGIN'
-            );
 
             const userResult =
                 await client.query(
                     `
                     SELECT *
                     FROM users
-                    WHERE id=$1
+                    WHERE id = $1
                     FOR UPDATE
                     `,
                     [req.user.id]
                 );
 
+
             const user =
                 userResult.rows[0];
 
+
             const owned =
-                Array.isArray(
-                    user.owned_ranks
-                )
-                    ? user.owned_ranks
+                Array.isArray(user.owned_ranks)
+                    ? [...user.owned_ranks]
                     : [];
+
 
             if (
                 owned.includes(
@@ -1058,102 +953,103 @@ app.post(
             ) {
 
                 throw new Error(
-                    'Этот ранг уже куплен.'
+                    "Этот ранг уже куплен."
                 );
             }
 
-            if (
-                Number(user.balance) <
-                Number(rank.price)
-            ) {
+
+            const balance =
+                Number(user.balance);
+
+
+            const price =
+                Number(rank.price);
+
+
+            if (balance < price) {
 
                 throw new Error(
-                    'Недостаточно денег.'
+                    `Не хватает ${
+                        (
+                            price - balance
+                        ).toLocaleString("ru-RU")
+                    } ₽`
                 );
             }
 
-            owned.push(
-                rank.rank_id
-            );
 
-            const history = [
-                ...(user.history || []),
+            owned.push(rank.rank_id);
 
-                {
-                    title:
-                        `Покупка ранга · ${rank.name}`,
 
-                    amount:
-                        -Number(
-                            rank.price
-                        ),
+            const history =
+                [
+                    ...(Array.isArray(user.history)
+                        ? user.history
+                        : []),
 
-                    createdAt:
-                        new Date().toISOString()
-                }
-            ].slice(-50);
+                    {
+                        title:
+                            `Покупка ранга · ${rank.name}`,
+
+                        amount:
+                            -price,
+
+                        createdAt:
+                            new Date().toISOString()
+                    }
+                ].slice(-30);
+
 
             const updated =
                 await client.query(
                     `
                     UPDATE users
-
                     SET
-                        balance=balance-$1,
-                        owned_ranks=$2,
-                        history=$3
-
-                    WHERE id=$4
-
+                        balance =
+                            balance - $1,
+                        owned_ranks =
+                            $2::jsonb,
+                        history =
+                            $3::jsonb
+                    WHERE id = $4
                     RETURNING *
                     `,
                     [
-                        Number(
-                            rank.price
-                        ),
-
-                        JSON.stringify(
-                            owned
-                        ),
-
-                        JSON.stringify(
-                            history
-                        ),
-
+                        price,
+                        JSON.stringify(owned),
+                        JSON.stringify(history),
                         user.id
                     ]
                 );
 
-            await client.query(
-                'COMMIT'
-            );
 
-            broadcastAll();
+            await client.query("COMMIT");
+
+            broadcast();
+
 
             res.json({
                 user:
                     publicUser(
                         updated.rows[0]
                     ),
-
                 rank: {
-                    rankId:
-                        rank.rank_id,
-
-                    name:
-                        rank.name
+                    id: rank.id,
+                    rankId: rank.rank_id,
+                    name: rank.name,
+                    title: rank.title,
+                    price: price,
+                    color: rank.color,
+                    icon: rank.icon
                 }
             });
 
         } catch (error) {
 
-            await client.query(
-                'ROLLBACK'
-            );
+            await client.query("ROLLBACK");
 
             res.status(400).json({
-                error:
-                    error.message
+                error: error.message
             });
 
         } finally {
@@ -1163,75 +1059,57 @@ app.post(
     }
 );
 
+
 /* =========================================================
    QUESTS
 ========================================================= */
 
-app.get(
-    '/api/quests',
-    async (req, res) => {
+app.get("/api/quests", async (req, res) => {
 
-        try {
+    try {
 
-            const result =
-                await pool.query(
-                    `
-                    SELECT *
-                    FROM quests
-                    ORDER BY created_at ASC
-                    `
-                );
+        const result =
+            await pool.query(`
+                SELECT
+                    id,
+                    quest_id,
+                    title,
+                    description,
+                    reward,
+                    xp,
+                    created_at
+                FROM quests
+                ORDER BY id ASC
+            `);
 
-            res.json({
-                quests:
-                    result.rows.map(
-                        quest => ({
-                            id:
-                                quest.id,
 
-                            questId:
-                                quest.quest_id,
+        res.json({
+            quests:
+                result.rows.map(q => ({
+                    id: q.id,
+                    questId: q.quest_id,
+                    title: q.title,
+                    description: q.description,
+                    reward: Number(q.reward),
+                    xp: Number(q.xp),
+                    createdAt: q.created_at
+                }))
+        });
 
-                            title:
-                                quest.title,
+    } catch (error) {
 
-                            description:
-                                quest.description,
+        console.error("QUESTS ERROR:", error);
 
-                            reward:
-                                Number(
-                                    quest.reward
-                                ),
-
-                            xp:
-                                Number(
-                                    quest.xp
-                                )
-                        })
-                    )
-            });
-
-        } catch (error) {
-
-            console.error(
-                'QUESTS ERROR:',
-                error
-            );
-
-            res.status(500).json({
-                error:
-                    'Не удалось загрузить квесты.'
-            });
-        }
+        res.status(500).json({
+            error:
+                "Ошибка загрузки квестов."
+        });
     }
-);
+});
 
-/* =========================================================
-   CLAIM QUEST
-========================================================= */
 
 app.post(
-    '/api/quests/:id/claim',
+    "/api/quests/:id/claim",
     auth,
     async (req, res) => {
 
@@ -1240,122 +1118,114 @@ app.post(
 
         try {
 
+            await client.query("BEGIN");
+
+
             const questResult =
                 await client.query(
                     `
                     SELECT *
                     FROM quests
-                    WHERE
-                        quest_id=$1
-                        OR id::text=$1
-                    LIMIT 1
+                    WHERE quest_id = $1
                     `,
                     [req.params.id]
                 );
 
+
             const quest =
                 questResult.rows[0];
 
+
             if (!quest) {
 
-                return res.status(404).json({
-                    error:
-                        'Квест не найден.'
-                });
+                throw new Error(
+                    "Квест не найден."
+                );
             }
 
-            await client.query(
-                'BEGIN'
-            );
 
             const userResult =
                 await client.query(
                     `
                     SELECT *
                     FROM users
-                    WHERE id=$1
+                    WHERE id = $1
                     FOR UPDATE
                     `,
                     [req.user.id]
                 );
 
+
             const user =
                 userResult.rows[0];
 
+
             const claimed =
                 user.claimed_quests || {};
+
 
             if (
                 claimed[quest.quest_id]
             ) {
 
                 throw new Error(
-                    'Этот квест уже получен.'
+                    "Этот квест уже получен."
                 );
             }
 
-            claimed[
-                quest.quest_id
-            ] = true;
 
-            const history = [
-                ...(user.history || []),
+            claimed[quest.quest_id] = true;
 
-                {
-                    title:
-                        `Квест · ${quest.title}`,
 
-                    amount:
-                        Number(
-                            quest.reward
-                        ),
+            const history =
+                [
+                    ...(Array.isArray(user.history)
+                        ? user.history
+                        : []),
 
-                    createdAt:
-                        new Date().toISOString()
-                }
-            ].slice(-50);
+                    {
+                        title:
+                            `Квест · ${quest.title}`,
+
+                        amount:
+                            Number(quest.reward),
+
+                        createdAt:
+                            new Date().toISOString()
+                    }
+                ].slice(-30);
+
 
             const updated =
                 await client.query(
                     `
                     UPDATE users
-
                     SET
-                        balance=balance+$1,
-                        xp=xp+$2,
-                        claimed_quests=$3,
-                        history=$4
-
-                    WHERE id=$5
-
+                        balance =
+                            balance + $1,
+                        xp =
+                            xp + $2,
+                        claimed_quests =
+                            $3::jsonb,
+                        history =
+                            $4::jsonb
+                    WHERE id = $5
                     RETURNING *
                     `,
                     [
-                        Number(
-                            quest.reward
-                        ),
-
-                        Number(
-                            quest.xp
-                        ),
-
-                        JSON.stringify(
-                            claimed
-                        ),
-
-                        JSON.stringify(
-                            history
-                        ),
-
+                        Number(quest.reward),
+                        Number(quest.xp),
+                        JSON.stringify(claimed),
+                        JSON.stringify(history),
                         user.id
                     ]
                 );
 
-            await client.query(
-                'COMMIT'
-            );
 
-            broadcastAll();
+            await client.query("COMMIT");
+
+            broadcast();
+
 
             res.json({
                 user:
@@ -1364,25 +1234,18 @@ app.post(
                     ),
 
                 reward:
-                    Number(
-                        quest.reward
-                    ),
+                    Number(quest.reward),
 
                 xp:
-                    Number(
-                        quest.xp
-                    )
+                    Number(quest.xp)
             });
 
         } catch (error) {
 
-            await client.query(
-                'ROLLBACK'
-            );
+            await client.query("ROLLBACK");
 
             res.status(400).json({
-                error:
-                    error.message
+                error: error.message
             });
 
         } finally {
@@ -1392,19 +1255,19 @@ app.post(
     }
 );
 
+
 /* =========================================================
    LEADERBOARD
 ========================================================= */
 
 app.get(
-    '/api/leaderboard',
+    "/api/leaderboard",
     async (req, res) => {
 
         try {
 
-            const result =
-                await pool.query(
-                    `
+            const users =
+                await pool.query(`
                     SELECT
                         id,
                         username,
@@ -1412,70 +1275,71 @@ app.get(
                         xp,
                         wins,
                         owned_ranks
-
                     FROM users
-
-                    WHERE is_admin=false
-
                     ORDER BY
                         elo DESC,
                         xp DESC,
                         wins DESC
-                    `
-                );
+                `);
+
+
+            const quests =
+                await pool.query(`
+                    SELECT
+                        id,
+                        quest_id,
+                        title,
+                        description,
+                        reward,
+                        xp
+                    FROM quests
+                    ORDER BY id ASC
+                `);
+
 
             res.json({
+
                 players:
-                    result.rows.map(
-                        user => ({
-                            id:
-                                user.id,
+                    users.rows.map(u => ({
+                        id: u.id,
+                        username: u.username,
+                        elo: Number(u.elo),
+                        xp: Number(u.xp),
+                        wins: Number(u.wins),
+                        ownedRanks:
+                            u.owned_ranks || []
+                    })),
 
-                            username:
-                                user.username,
-
-                            elo:
-                                Number(
-                                    user.elo
-                                ),
-
-                            xp:
-                                Number(
-                                    user.xp
-                                ),
-
-                            wins:
-                                Number(
-                                    user.wins
-                                ),
-
-                            ownedRanks:
-                                user.owned_ranks || []
-                        })
-                    )
+                quests:
+                    quests.rows.map(q => ({
+                        id: q.id,
+                        questId: q.quest_id,
+                        title: q.title,
+                        description: q.description,
+                        reward: Number(q.reward),
+                        xp: Number(q.xp)
+                    }))
             });
 
         } catch (error) {
 
-            console.error(
-                'LEADERBOARD ERROR:',
-                error
-            );
+            console.error(error);
 
             res.status(500).json({
                 error:
-                    'Ошибка рейтинга.'
+                    "Ошибка рейтинга."
             });
         }
     }
 );
 
+
 /* =========================================================
-   ADMIN - USERS
+   ADMIN — USERS
 ========================================================= */
 
 app.get(
-    '/api/admin/users',
+    "/api/admin/users",
     adminAuth,
     async (req, res) => {
 
@@ -1483,278 +1347,127 @@ app.get(
 
             const search =
                 String(
-                    req.query.search || ''
+                    req.query.search || ""
                 ).trim();
 
-            let result;
 
-            if (search) {
+            const result =
+                await pool.query(
+                    `
+                    SELECT
+                        id,
+                        email,
+                        username,
+                        balance,
+                        xp,
+                        elo,
+                        wins,
+                        owned_ranks
+                    FROM users
 
-                result =
-                    await pool.query(
-                        `
-                        SELECT
-                            id,
-                            email,
-                            username,
-                            balance,
-                            xp,
-                            elo,
-                            wins,
-                            owned_ranks,
-                            is_admin
+                    WHERE
+                        $1 = ''
+                        OR username ILIKE '%' || $1 || '%'
+                        OR email ILIKE '%' || $1 || '%'
 
-                        FROM users
+                    ORDER BY
+                        elo DESC
 
-                        WHERE
-                            username ILIKE $1
-                            OR email ILIKE $1
+                    LIMIT 100
+                    `,
+                    [search]
+                );
 
-                        ORDER BY elo DESC
-
-                        LIMIT 100
-                        `,
-                        [
-                            `%${search}%`
-                        ]
-                    );
-
-            } else {
-
-                result =
-                    await pool.query(
-                        `
-                        SELECT
-                            id,
-                            email,
-                            username,
-                            balance,
-                            xp,
-                            elo,
-                            wins,
-                            owned_ranks,
-                            is_admin
-
-                        FROM users
-
-                        ORDER BY elo DESC
-
-                        LIMIT 100
-                        `
-                    );
-            }
 
             res.json({
                 users:
-                    result.rows.map(
-                        user => ({
-                            id:
-                                user.id,
-
-                            email:
-                                user.email,
-
-                            username:
-                                user.username,
-
-                            balance:
-                                Number(
-                                    user.balance
-                                ),
-
-                            xp:
-                                Number(
-                                    user.xp
-                                ),
-
-                            elo:
-                                Number(
-                                    user.elo
-                                ),
-
-                            wins:
-                                Number(
-                                    user.wins
-                                ),
-
-                            ownedRanks:
-                                user.owned_ranks || [],
-
-                            isAdmin:
-                                Boolean(
-                                    user.is_admin
-                                )
-                        })
-                    )
+                    result.rows.map(u => ({
+                        id: u.id,
+                        email: u.email,
+                        username: u.username,
+                        balance: Number(u.balance),
+                        xp: Number(u.xp),
+                        elo: Number(u.elo),
+                        wins: Number(u.wins),
+                        ownedRanks:
+                            u.owned_ranks || []
+                    }))
             });
 
         } catch (error) {
 
-            console.error(
-                'ADMIN USERS ERROR:',
-                error
-            );
+            console.error(error);
 
             res.status(500).json({
                 error:
-                    'Ошибка загрузки игроков.'
+                    "Ошибка загрузки игроков."
             });
         }
     }
 );
 
+
 /* =========================================================
-   ADMIN - EDIT USER
+   ADMIN — EDIT USER
 ========================================================= */
 
 app.put(
-    '/api/admin/users/:id',
+    "/api/admin/users/:id",
     adminAuth,
     async (req, res) => {
 
         try {
 
-            const id =
-                req.params.id;
-
             const elo =
-                Number(
-                    req.body?.elo
+                Math.max(
+                    0,
+                    Number(req.body.elo || 0)
                 );
 
             const wins =
-                Number(
-                    req.body?.wins
+                Math.max(
+                    0,
+                    Number(req.body.wins || 0)
                 );
 
             const balance =
-                Number(
-                    req.body?.balance
+                Math.max(
+                    0,
+                    Number(req.body.balance || 0)
                 );
 
-            const xp =
-                req.body?.xp !== undefined
-                    ? Number(
-                        req.body.xp
-                    )
-                    : null;
 
-            if (
-                !Number.isFinite(elo) ||
-                !Number.isFinite(wins) ||
-                !Number.isFinite(balance)
-            ) {
+            const result =
+                await pool.query(
+                    `
+                    UPDATE users
+                    SET
+                        elo = $1,
+                        wins = $2,
+                        balance = $3
+                    WHERE id = $4
+                    RETURNING *
+                    `,
+                    [
+                        elo,
+                        wins,
+                        balance,
+                        req.params.id
+                    ]
+                );
 
-                return res.status(400).json({
-                    error:
-                        'Неверные значения.'
-                });
-            }
 
-            let result;
-
-            if (xp !== null) {
-
-                result =
-                    await pool.query(
-                        `
-                        UPDATE users
-
-                        SET
-                            elo=$1,
-                            wins=$2,
-                            balance=$3,
-                            xp=$4
-
-                        WHERE id=$5
-
-                        RETURNING *
-                        `,
-                        [
-                            Math.max(
-                                0,
-                                Math.floor(
-                                    elo
-                                )
-                            ),
-
-                            Math.max(
-                                0,
-                                Math.floor(
-                                    wins
-                                )
-                            ),
-
-                            Math.max(
-                                0,
-                                Math.floor(
-                                    balance
-                                )
-                            ),
-
-                            Math.max(
-                                0,
-                                Math.floor(
-                                    xp
-                                )
-                            ),
-
-                            id
-                        ]
-                    );
-
-            } else {
-
-                result =
-                    await pool.query(
-                        `
-                        UPDATE users
-
-                        SET
-                            elo=$1,
-                            wins=$2,
-                            balance=$3
-
-                        WHERE id=$4
-
-                        RETURNING *
-                        `,
-                        [
-                            Math.max(
-                                0,
-                                Math.floor(
-                                    elo
-                                )
-                            ),
-
-                            Math.max(
-                                0,
-                                Math.floor(
-                                    wins
-                                )
-                            ),
-
-                            Math.max(
-                                0,
-                                Math.floor(
-                                    balance
-                                )
-                            ),
-
-                            id
-                        ]
-                    );
-            }
-
-            if (!result.rows.length) {
+            if (!result.rows[0]) {
 
                 return res.status(404).json({
                     error:
-                        'Игрок не найден.'
+                        "Игрок не найден."
                 });
             }
 
-            broadcastAll();
+
+            broadcast();
+
 
             res.json({
                 user:
@@ -1765,140 +1478,351 @@ app.put(
 
         } catch (error) {
 
-            console.error(
-                'ADMIN UPDATE USER ERROR:',
-                error
-            );
+            console.error(error);
 
             res.status(500).json({
                 error:
-                    'Не удалось изменить игрока.'
+                    "Не удалось изменить игрока."
             });
         }
     }
 );
 
+
 /* =========================================================
-   ADMIN - RANKS
+   ADMIN — GIVE RANK
 ========================================================= */
 
-app.get(
-    '/api/admin/ranks',
+app.post(
+    "/api/admin/users/:id/ranks/:rankId",
     adminAuth,
     async (req, res) => {
 
         try {
 
-            const result =
+            const userResult =
+                await pool.query(
+                    `
+                    SELECT *
+                    FROM users
+                    WHERE id = $1
+                    `,
+                    [req.params.id]
+                );
+
+
+            const user =
+                userResult.rows[0];
+
+
+            if (!user) {
+
+                return res.status(404).json({
+                    error:
+                        "Игрок не найден."
+                });
+            }
+
+
+            const rankResult =
                 await pool.query(
                     `
                     SELECT *
                     FROM ranks
-                    ORDER BY created_at ASC
-                    `
+                    WHERE rank_id = $1
+                    `,
+                    [req.params.rankId]
                 );
 
+
+            const rank =
+                rankResult.rows[0];
+
+
+            if (!rank) {
+
+                return res.status(404).json({
+                    error:
+                        "Ранг не найден."
+                });
+            }
+
+
+            const owned =
+                Array.isArray(user.owned_ranks)
+                    ? [...user.owned_ranks]
+                    : [];
+
+
+            if (!owned.includes(rank.rank_id)) {
+
+                owned.push(rank.rank_id);
+            }
+
+
+            const result =
+                await pool.query(
+                    `
+                    UPDATE users
+                    SET owned_ranks = $1::jsonb
+                    WHERE id = $2
+                    RETURNING *
+                    `,
+                    [
+                        JSON.stringify(owned),
+                        user.id
+                    ]
+                );
+
+
+            broadcast();
+
+
             res.json({
-                ranks:
-                    result.rows
+                user:
+                    publicUser(
+                        result.rows[0]
+                    )
             });
 
         } catch (error) {
 
+            console.error(error);
+
             res.status(500).json({
                 error:
-                    'Ошибка загрузки рангов.'
+                    "Не удалось выдать ранг."
             });
         }
     }
 );
 
-app.post(
-    '/api/admin/ranks',
+
+/* =========================================================
+   ADMIN — REMOVE RANK
+========================================================= */
+
+app.delete(
+    "/api/admin/users/:id/ranks/:rankId",
     adminAuth,
     async (req, res) => {
 
         try {
 
-            const {
-                rankId,
-                name,
-                title,
-                price,
-                color,
-                icon
-            } = req.body || {};
+            const userResult =
+                await pool.query(
+                    `
+                    SELECT *
+                    FROM users
+                    WHERE id = $1
+                    `,
+                    [req.params.id]
+                );
 
-            const id =
-                String(
-                    rankId || ''
-                ).trim();
 
-            const rankName =
-                String(
-                    name || ''
-                ).trim();
+            const user =
+                userResult.rows[0];
 
-            const rankTitle =
-                String(
-                    title || ''
-                ).trim();
 
-            const rankPrice =
-                Number(price);
+            if (!user) {
 
-            const rankColor =
-                String(
-                    color || '#ffffff'
-                ).trim();
-
-            const rankIcon =
-                String(
-                    icon || '★'
-                ).trim();
-
-            if (!id) {
-
-                return res.status(400).json({
+                return res.status(404).json({
                     error:
-                        'Укажи ID ранга.'
+                        "Игрок не найден."
                 });
             }
 
-            if (!rankName) {
 
-                return res.status(400).json({
-                    error:
-                        'Укажи название ранга.'
-                });
-            }
+            const owned =
+                Array.isArray(user.owned_ranks)
+                    ? user.owned_ranks.filter(
+                        rank =>
+                            rank !== req.params.rankId
+                    )
+                    : [];
 
-            if (!rankTitle) {
-
-                return res.status(400).json({
-                    error:
-                        'Укажи титул ранга.'
-                });
-            }
-
-            if (
-                !Number.isFinite(
-                    rankPrice
-                ) ||
-                rankPrice < 0
-            ) {
-
-                return res.status(400).json({
-                    error:
-                        'Неверная цена.'
-                });
-            }
 
             const result =
                 await pool.query(
                     `
-                    INSERT INTO ranks
-                    (
+                    UPDATE users
+                    SET owned_ranks = $1::jsonb
+                    WHERE id = $2
+                    RETURNING *
+                    `,
+                    [
+                        JSON.stringify(owned),
+                        user.id
+                    ]
+                );
+
+
+            broadcast();
+
+
+            res.json({
+                user:
+                    publicUser(
+                        result.rows[0]
+                    )
+            });
+
+        } catch (error) {
+
+            console.error(error);
+
+            res.status(500).json({
+                error:
+                    "Не удалось снять ранг."
+            });
+        }
+    }
+);
+
+
+/* =========================================================
+   ADMIN — RANKS
+========================================================= */
+
+app.get(
+    "/api/admin/ranks",
+    adminAuth,
+    async (req, res) => {
+
+        try {
+
+            const result =
+                await pool.query(`
+                    SELECT *
+                    FROM ranks
+                    ORDER BY price ASC, id ASC
+                `);
+
+
+            res.json({
+                ranks:
+                    result.rows.map(r => ({
+                        id: r.rank_id,
+                        databaseId: r.id,
+                        rankId: r.rank_id,
+                        name: r.name,
+                        title: r.title,
+                        price: Number(r.price),
+                        color: r.color,
+                        icon: r.icon,
+                        createdAt: r.created_at
+                    }))
+            });
+
+        } catch (error) {
+
+            console.error(error);
+
+            res.status(500).json({
+                error:
+                    "Ошибка загрузки рангов."
+            });
+        }
+    }
+);
+
+
+/* =========================================================
+   ADMIN — CREATE RANK
+========================================================= */
+
+app.post(
+    "/api/admin/ranks",
+    adminAuth,
+    async (req, res) => {
+
+        try {
+
+            const rankId =
+                String(
+                    req.body.rankId || ""
+                ).trim().toLowerCase();
+
+            const name =
+                String(
+                    req.body.name || ""
+                ).trim();
+
+            const title =
+                String(
+                    req.body.title || ""
+                ).trim();
+
+            const price =
+                Math.max(
+                    0,
+                    Number(
+                        req.body.price || 0
+                    )
+                );
+
+            const color =
+                String(
+                    req.body.color || "#ffffff"
+                ).trim();
+
+            const icon =
+                String(
+                    req.body.icon || "★"
+                ).trim();
+
+
+            if (!rankId) {
+
+                return res.status(400).json({
+                    error:
+                        "Укажи ID ранга."
+                });
+            }
+
+
+            if (!name) {
+
+                return res.status(400).json({
+                    error:
+                        "Укажи название ранга."
+                });
+            }
+
+
+            if (!title) {
+
+                return res.status(400).json({
+                    error:
+                        "Укажи титул ранга."
+                });
+            }
+
+
+            const exists =
+                await pool.query(
+                    `
+                    SELECT 1
+                    FROM ranks
+                    WHERE rank_id = $1
+                    `,
+                    [rankId]
+                );
+
+
+            if (exists.rowCount) {
+
+                return res.status(409).json({
+                    error:
+                        "Такой ID ранга уже существует."
+                });
+            }
+
+
+            const result =
+                await pool.query(
+                    `
+                    INSERT INTO ranks (
                         rank_id,
                         name,
                         title,
@@ -1906,58 +1830,76 @@ app.post(
                         color,
                         icon
                     )
-
-                    VALUES
-                    ($1,$2,$3,$4,$5,$6)
-
+                    VALUES (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5,
+                        $6
+                    )
                     RETURNING *
                     `,
                     [
-                        id,
-                        rankName,
-                        rankTitle,
-                        Math.floor(
-                            rankPrice
-                        ),
-                        rankColor,
-                        rankIcon
+                        rankId,
+                        name,
+                        title,
+                        price,
+                        color,
+                        icon
                     ]
                 );
 
-            broadcastAll();
+
+            broadcast();
+
 
             res.json({
-                rank:
-                    result.rows[0]
+                rank: {
+                    id:
+                        result.rows[0].rank_id,
+
+                    rankId:
+                        result.rows[0].rank_id,
+
+                    name:
+                        result.rows[0].name,
+
+                    title:
+                        result.rows[0].title,
+
+                    price:
+                        Number(
+                            result.rows[0].price
+                        ),
+
+                    color:
+                        result.rows[0].color,
+
+                    icon:
+                        result.rows[0].icon
+                }
             });
 
         } catch (error) {
 
-            console.error(
-                'CREATE RANK ERROR:',
-                error
-            );
-
-            if (
-                error.code === '23505'
-            ) {
-
-                return res.status(409).json({
-                    error:
-                        'Такой ID ранга уже существует.'
-                });
-            }
+            console.error(error);
 
             res.status(500).json({
                 error:
-                    'Не удалось создать ранг.'
+                    "Не удалось создать ранг."
             });
         }
     }
 );
 
+
+/* =========================================================
+   ADMIN — DELETE RANK
+========================================================= */
+
 app.delete(
-    '/api/admin/ranks/:id',
+    "/api/admin/ranks/:id",
     adminAuth,
     async (req, res) => {
 
@@ -1967,25 +1909,61 @@ app.delete(
                 await pool.query(
                     `
                     DELETE FROM ranks
-
-                    WHERE
-                        id::text=$1
-                        OR rank_id=$1
-
+                    WHERE rank_id = $1
                     RETURNING *
                     `,
                     [req.params.id]
                 );
 
-            if (!result.rows.length) {
+
+            if (!result.rows[0]) {
 
                 return res.status(404).json({
                     error:
-                        'Ранг не найден.'
+                        "Ранг не найден."
                 });
             }
 
-            broadcastAll();
+
+            /*
+             * Удаляем этот ранг
+             * у всех игроков.
+             */
+
+            const users =
+                await pool.query(`
+                    SELECT id, owned_ranks
+                    FROM users
+                `);
+
+
+            for (const user of users.rows) {
+
+                const owned =
+                    Array.isArray(user.owned_ranks)
+                        ? user.owned_ranks.filter(
+                            r =>
+                                r !== req.params.id
+                        )
+                        : [];
+
+
+                await pool.query(
+                    `
+                    UPDATE users
+                    SET owned_ranks = $1::jsonb
+                    WHERE id = $2
+                    `,
+                    [
+                        JSON.stringify(owned),
+                        user.id
+                    ]
+                );
+            }
+
+
+            broadcast();
+
 
             res.json({
                 success: true
@@ -1993,382 +1971,221 @@ app.delete(
 
         } catch (error) {
 
-            console.error(
-                'DELETE RANK ERROR:',
-                error
-            );
+            console.error(error);
 
             res.status(500).json({
                 error:
-                    'Не удалось удалить ранг.'
+                    "Не удалось удалить ранг."
             });
         }
     }
 );
+
 
 /* =========================================================
-   ADMIN - GIVE / REMOVE RANK
-========================================================= */
-
-app.post(
-    '/api/admin/users/:id/ranks/:rankId',
-    adminAuth,
-    async (req, res) => {
-
-        try {
-
-            const user =
-                await getUserById(
-                    req.params.id
-                );
-
-            if (!user) {
-
-                return res.status(404).json({
-                    error:
-                        'Игрок не найден.'
-                });
-            }
-
-            const rankResult =
-                await pool.query(
-                    `
-                    SELECT *
-                    FROM ranks
-                    WHERE
-                        rank_id=$1
-                        OR id::text=$1
-                    LIMIT 1
-                    `,
-                    [req.params.rankId]
-                );
-
-            const rank =
-                rankResult.rows[0];
-
-            if (!rank) {
-
-                return res.status(404).json({
-                    error:
-                        'Ранг не найден.'
-                });
-            }
-
-            const owned =
-                Array.isArray(
-                    user.owned_ranks
-                )
-                    ? user.owned_ranks
-                    : [];
-
-            if (
-                !owned.includes(
-                    rank.rank_id
-                )
-            ) {
-
-                owned.push(
-                    rank.rank_id
-                );
-            }
-
-            const result =
-                await pool.query(
-                    `
-                    UPDATE users
-
-                    SET owned_ranks=$1
-
-                    WHERE id=$2
-
-                    RETURNING *
-                    `,
-                    [
-                        JSON.stringify(
-                            owned
-                        ),
-                        user.id
-                    ]
-                );
-
-            broadcastAll();
-
-            res.json({
-                user:
-                    publicUser(
-                        result.rows[0]
-                    )
-            });
-
-        } catch (error) {
-
-            console.error(
-                'GIVE RANK ERROR:',
-                error
-            );
-
-            res.status(500).json({
-                error:
-                    'Не удалось выдать ранг.'
-            });
-        }
-    }
-);
-
-app.delete(
-    '/api/admin/users/:id/ranks/:rankId',
-    adminAuth,
-    async (req, res) => {
-
-        try {
-
-            const user =
-                await getUserById(
-                    req.params.id
-                );
-
-            if (!user) {
-
-                return res.status(404).json({
-                    error:
-                        'Игрок не найден.'
-                });
-            }
-
-            const owned =
-                Array.isArray(
-                    user.owned_ranks
-                )
-                    ? user.owned_ranks
-                    : [];
-
-            const newOwned =
-                owned.filter(
-                    rankId =>
-                        rankId !==
-                        req.params.rankId
-                );
-
-            const result =
-                await pool.query(
-                    `
-                    UPDATE users
-
-                    SET owned_ranks=$1
-
-                    WHERE id=$2
-
-                    RETURNING *
-                    `,
-                    [
-                        JSON.stringify(
-                            newOwned
-                        ),
-                        user.id
-                    ]
-                );
-
-            broadcastAll();
-
-            res.json({
-                user:
-                    publicUser(
-                        result.rows[0]
-                    )
-            });
-
-        } catch (error) {
-
-            console.error(
-                'REMOVE RANK ERROR:',
-                error
-            );
-
-            res.status(500).json({
-                error:
-                    'Не удалось снять ранг.'
-            });
-        }
-    }
-);
-
-/* =========================================================
-   ADMIN - QUESTS
+   ADMIN — QUESTS
 ========================================================= */
 
 app.get(
-    '/api/admin/quests',
+    "/api/admin/quests",
     adminAuth,
     async (req, res) => {
 
         try {
 
             const result =
-                await pool.query(
-                    `
+                await pool.query(`
                     SELECT *
                     FROM quests
-                    ORDER BY created_at ASC
-                    `
-                );
+                    ORDER BY id ASC
+                `);
+
 
             res.json({
                 quests:
-                    result.rows
+                    result.rows.map(q => ({
+                        id: q.quest_id,
+                        databaseId: q.id,
+                        questId: q.quest_id,
+                        title: q.title,
+                        description: q.description,
+                        reward: Number(q.reward),
+                        xp: Number(q.xp),
+                        createdAt: q.created_at
+                    }))
             });
 
         } catch (error) {
 
+            console.error(error);
+
             res.status(500).json({
                 error:
-                    'Ошибка загрузки квестов.'
+                    "Ошибка загрузки квестов."
             });
         }
     }
 );
 
+
+/* =========================================================
+   ADMIN — CREATE QUEST
+========================================================= */
+
 app.post(
-    '/api/admin/quests',
+    "/api/admin/quests",
     adminAuth,
     async (req, res) => {
 
         try {
 
-            const {
-                questId,
-                title,
-                description,
-                reward,
-                xp
-            } = req.body || {};
-
-            const id =
+            const questId =
                 String(
-                    questId || ''
+                    req.body.questId || ""
+                ).trim().toLowerCase();
+
+            const title =
+                String(
+                    req.body.title || ""
                 ).trim();
 
-            const questTitle =
+            const description =
                 String(
-                    title || ''
+                    req.body.description || ""
                 ).trim();
 
-            const questDescription =
-                String(
-                    description || ''
-                ).trim();
+            const reward =
+                Math.max(
+                    0,
+                    Number(
+                        req.body.reward || 0
+                    )
+                );
 
-            const questReward =
-                Number(reward);
+            const xp =
+                Math.max(
+                    0,
+                    Number(
+                        req.body.xp || 0
+                    )
+                );
 
-            const questXp =
-                Number(xp);
 
-            if (!id) {
-
-                return res.status(400).json({
-                    error:
-                        'Укажи ID квеста.'
-                });
-            }
-
-            if (!questTitle) {
+            if (!questId) {
 
                 return res.status(400).json({
                     error:
-                        'Укажи название квеста.'
+                        "Укажи ID квеста."
                 });
             }
 
-            if (
-                !Number.isFinite(
-                    questReward
-                ) ||
-                questReward < 0
-            ) {
+
+            if (!title) {
 
                 return res.status(400).json({
                     error:
-                        'Неверная награда.'
+                        "Укажи название квеста."
                 });
             }
 
-            if (
-                !Number.isFinite(
-                    questXp
-                ) ||
-                questXp < 0
-            ) {
 
-                return res.status(400).json({
+            const exists =
+                await pool.query(
+                    `
+                    SELECT 1
+                    FROM quests
+                    WHERE quest_id = $1
+                    `,
+                    [questId]
+                );
+
+
+            if (exists.rowCount) {
+
+                return res.status(409).json({
                     error:
-                        'Неверный XP.'
+                        "Такой ID квеста уже существует."
                 });
             }
+
 
             const result =
                 await pool.query(
                     `
-                    INSERT INTO quests
-                    (
+                    INSERT INTO quests (
                         quest_id,
                         title,
                         description,
                         reward,
                         xp
                     )
-
-                    VALUES
-                    ($1,$2,$3,$4,$5)
-
+                    VALUES (
+                        $1,
+                        $2,
+                        $3,
+                        $4,
+                        $5
+                    )
                     RETURNING *
                     `,
                     [
-                        id,
-                        questTitle,
-                        questDescription,
-                        Math.floor(
-                            questReward
-                        ),
-                        Math.floor(
-                            questXp
-                        )
+                        questId,
+                        title,
+                        description,
+                        reward,
+                        xp
                     ]
                 );
 
-            broadcastAll();
+
+            broadcast();
+
 
             res.json({
-                quest:
-                    result.rows[0]
+                quest: {
+                    id:
+                        result.rows[0].quest_id,
+
+                    questId:
+                        result.rows[0].quest_id,
+
+                    title:
+                        result.rows[0].title,
+
+                    description:
+                        result.rows[0].description,
+
+                    reward:
+                        Number(
+                            result.rows[0].reward
+                        ),
+
+                    xp:
+                        Number(
+                            result.rows[0].xp
+                        )
+                }
             });
 
         } catch (error) {
 
-            console.error(
-                'CREATE QUEST ERROR:',
-                error
-            );
-
-            if (
-                error.code === '23505'
-            ) {
-
-                return res.status(409).json({
-                    error:
-                        'Такой ID квеста уже существует.'
-                });
-            }
+            console.error(error);
 
             res.status(500).json({
                 error:
-                    'Не удалось создать квест.'
+                    "Не удалось создать квест."
             });
         }
     }
 );
 
+
+/* =========================================================
+   ADMIN — DELETE QUEST
+========================================================= */
+
 app.delete(
-    '/api/admin/quests/:id',
+    "/api/admin/quests/:id",
     adminAuth,
     async (req, res) => {
 
@@ -2378,25 +2195,61 @@ app.delete(
                 await pool.query(
                     `
                     DELETE FROM quests
-
-                    WHERE
-                        id::text=$1
-                        OR quest_id=$1
-
+                    WHERE quest_id = $1
                     RETURNING *
                     `,
                     [req.params.id]
                 );
 
-            if (!result.rows.length) {
+
+            if (!result.rows[0]) {
 
                 return res.status(404).json({
                     error:
-                        'Квест не найден.'
+                        "Квест не найден."
                 });
             }
 
-            broadcastAll();
+
+            /*
+             * Удаляем отметку этого квеста
+             * у игроков.
+             */
+
+            const users =
+                await pool.query(`
+                    SELECT id, claimed_quests
+                    FROM users
+                `);
+
+
+            for (const user of users.rows) {
+
+                const claimed =
+                    user.claimed_quests || {};
+
+
+                delete claimed[
+                    req.params.id
+                ];
+
+
+                await pool.query(
+                    `
+                    UPDATE users
+                    SET claimed_quests = $1::jsonb
+                    WHERE id = $2
+                    `,
+                    [
+                        JSON.stringify(claimed),
+                        user.id
+                    ]
+                );
+            }
+
+
+            broadcast();
+
 
             res.json({
                 success: true
@@ -2404,265 +2257,77 @@ app.delete(
 
         } catch (error) {
 
-            console.error(
-                'DELETE QUEST ERROR:',
-                error
-            );
+            console.error(error);
 
             res.status(500).json({
                 error:
-                    'Не удалось удалить квест.'
+                    "Не удалось удалить квест."
             });
         }
     }
 );
 
-/* =========================================================
-   ADMIN - GIVE QUEST
-========================================================= */
-
-app.post(
-    '/api/admin/users/:id/quests/:questId',
-    adminAuth,
-    async (req, res) => {
-
-        try {
-
-            const user =
-                await getUserById(
-                    req.params.id
-                );
-
-            if (!user) {
-
-                return res.status(404).json({
-                    error:
-                        'Игрок не найден.'
-                });
-            }
-
-            const questResult =
-                await pool.query(
-                    `
-                    SELECT *
-                    FROM quests
-                    WHERE
-                        quest_id=$1
-                        OR id::text=$1
-                    LIMIT 1
-                    `,
-                    [req.params.questId]
-                );
-
-            const quest =
-                questResult.rows[0];
-
-            if (!quest) {
-
-                return res.status(404).json({
-                    error:
-                        'Квест не найден.'
-                });
-            }
-
-            const claimed =
-                user.claimed_quests || {};
-
-            claimed[
-                quest.quest_id
-            ] = true;
-
-            const result =
-                await pool.query(
-                    `
-                    UPDATE users
-
-                    SET claimed_quests=$1
-
-                    WHERE id=$2
-
-                    RETURNING *
-                    `,
-                    [
-                        JSON.stringify(
-                            claimed
-                        ),
-                        user.id
-                    ]
-                );
-
-            broadcastAll();
-
-            res.json({
-                user:
-                    publicUser(
-                        result.rows[0]
-                    )
-            });
-
-        } catch (error) {
-
-            console.error(
-                'GIVE QUEST ERROR:',
-                error
-            );
-
-            res.status(500).json({
-                error:
-                    'Не удалось выдать квест.'
-            });
-        }
-    }
-);
 
 /* =========================================================
-   ADMIN - MONEY / ELO / WINS SHORTCUTS
-========================================================= */
-
-app.post(
-    '/api/admin/users/:id/give',
-    adminAuth,
-    async (req, res) => {
-
-        try {
-
-            const money =
-                Number(
-                    req.body?.balance || 0
-                );
-
-            const elo =
-                Number(
-                    req.body?.elo || 0
-                );
-
-            const wins =
-                Number(
-                    req.body?.wins || 0
-                );
-
-            const xp =
-                Number(
-                    req.body?.xp || 0
-                );
-
-            const result =
-                await pool.query(
-                    `
-                    UPDATE users
-
-                    SET
-                        balance=balance+$1,
-                        elo=elo+$2,
-                        wins=wins+$3,
-                        xp=xp+$4
-
-                    WHERE id=$5
-
-                    RETURNING *
-                    `,
-                    [
-                        Math.floor(money),
-                        Math.floor(elo),
-                        Math.floor(wins),
-                        Math.floor(xp),
-                        req.params.id
-                    ]
-                );
-
-            if (!result.rows.length) {
-
-                return res.status(404).json({
-                    error:
-                        'Игрок не найден.'
-                });
-            }
-
-            broadcastAll();
-
-            res.json({
-                user:
-                    publicUser(
-                        result.rows[0]
-                    )
-            });
-
-        } catch (error) {
-
-            console.error(
-                'ADMIN GIVE ERROR:',
-                error
-            );
-
-            res.status(500).json({
-                error:
-                    'Не удалось выдать награду.'
-            });
-        }
-    }
-);
-
-/* =========================================================
-   SOCKET CONNECTION
-========================================================= */
-
-io.on(
-    'connection',
-    socket => {
-
-        console.log(
-            'Socket connected:',
-            socket.id
-        );
-
-        socket.on(
-            'disconnect',
-            () => {
-
-                console.log(
-                    'Socket disconnected:',
-                    socket.id
-                );
-            }
-        );
-    }
-);
-
-/* =========================================================
-   FRONTEND FALLBACK
+   HEALTH CHECK
 ========================================================= */
 
 app.get(
-    '*',
-    (req, res) => {
+    "/api/health",
+    async (req, res) => {
 
-        res.sendFile(
-            path.join(
-                __dirname,
-                'public',
-                'index.html'
-            )
-        );
+        try {
+
+            await pool.query(
+                "SELECT 1"
+            );
+
+            res.json({
+                status: "ok",
+                database: "connected",
+                astro: "online"
+            });
+
+        } catch (error) {
+
+            res.status(500).json({
+                status: "error",
+                database: "offline"
+            });
+        }
     }
 );
+
+
+/* =========================================================
+   FRONTEND
+========================================================= */
+
+app.get("*", (req, res) => {
+
+    res.sendFile(
+        path.join(
+            __dirname,
+            "public",
+            "index.html"
+        )
+    );
+});
+
 
 /* =========================================================
    START
 ========================================================= */
 
-async function start() {
-
-    try {
-
-        await initDatabase();
+initDatabase()
+    .then(() => {
 
         server.listen(
             PORT,
-            '0.0.0.0',
             () => {
 
                 console.log(
-                    `ASTRO ONLINE listening on port ${PORT}`
+                    `ASTRO ONLINE listening on :${PORT}`
                 );
 
                 console.log(
@@ -2671,16 +2336,37 @@ async function start() {
             }
         );
 
-    } catch (error) {
+    })
+    .catch(error => {
 
         console.error(
-            'FATAL SERVER ERROR:'
+            "FATAL SERVER ERROR:"
         );
 
         console.error(error);
 
         process.exit(1);
-    }
-}
+    });
 
-start();
+
+/* =========================================================
+   SOCKET
+========================================================= */
+
+io.on("connection", socket => {
+
+    console.log(
+        "ASTRO socket connected:",
+        socket.id
+    );
+
+    socket.on(
+        "disconnect",
+        () => {
+            console.log(
+                "ASTRO socket disconnected:",
+                socket.id
+            );
+        }
+    );
+});

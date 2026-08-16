@@ -8,14 +8,14 @@ const { Pool } = require('pg');
 
 const app = express();
 
-const PORT = process.env.PORT || 10000;
+const PORT = Number(process.env.PORT) || 10000;
 
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-/* =========================
-   POSTGRESQL
-========================= */
+/* =========================================================
+   DATABASE
+========================================================= */
 
 let pool = null;
 
@@ -27,11 +27,15 @@ if (process.env.DATABASE_URL) {
         idleTimeoutMillis: 30000,
         connectionTimeoutMillis: 10000
     });
+
+    pool.on('error', (err) => {
+        console.error('POSTGRES POOL ERROR:', err);
+    });
 }
 
-/* =========================
+/* =========================================================
    RANKS
-========================= */
+========================================================= */
 
 const RANKS = [
     {
@@ -72,14 +76,17 @@ const RANKS = [
     }
 ];
 
-/* =========================
-   DATABASE
-========================= */
+/* =========================================================
+   DATABASE INIT
+========================================================= */
 
 async function initDatabase() {
     if (!pool) {
-        console.log('ASTRO: DATABASE_URL не задан.');
-        console.log('ASTRO: сервер запущен без PostgreSQL.');
+        console.log('================================');
+        console.log('ASTRO ONLINE');
+        console.log('DATABASE_URL НЕ ЗАДАН');
+        console.log('Сервер запустится, но БД недоступна.');
+        console.log('================================');
         return;
     }
 
@@ -90,15 +97,21 @@ async function initDatabase() {
     try {
         /*
          * ВАЖНО:
-         * Никаких FOREIGN KEY.
-         * Никаких rank_id -> ranks.id.
-         * Никаких user_id -> uuid.
          *
-         * user_id в нашей таблице обычный BIGINT.
+         * Используются НОВЫЕ таблицы.
+         *
+         * Мы НЕ используем:
+         * ranks
+         * user_ranks
+         * quest_claims
+         * astro_users
+         * astro_sessions
+         *
+         * Старые таблицы вообще не трогаются.
          */
 
         await client.query(`
-            CREATE TABLE IF NOT EXISTS astro_users (
+            CREATE TABLE IF NOT EXISTS astro_v2_users (
                 id BIGSERIAL PRIMARY KEY,
                 username VARCHAR(32) NOT NULL UNIQUE,
                 password_hash TEXT NOT NULL,
@@ -110,7 +123,7 @@ async function initDatabase() {
         `);
 
         await client.query(`
-            CREATE TABLE IF NOT EXISTS astro_sessions (
+            CREATE TABLE IF NOT EXISTS astro_v2_sessions (
                 token TEXT PRIMARY KEY,
                 user_id BIGINT NOT NULL,
                 created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
@@ -118,20 +131,31 @@ async function initDatabase() {
         `);
 
         await client.query(`
-            CREATE INDEX IF NOT EXISTS astro_sessions_user_idx
-            ON astro_sessions(user_id)
+            CREATE INDEX IF NOT EXISTS astro_v2_sessions_user_idx
+            ON astro_v2_sessions(user_id)
+        `);
+
+        await client.query(`
+            CREATE INDEX IF NOT EXISTS astro_v2_rating_idx
+            ON astro_v2_users(rating DESC)
+        `);
+
+        await client.query(`
+            CREATE INDEX IF NOT EXISTS astro_v2_username_idx
+            ON astro_v2_users(username)
         `);
 
         console.log('ASTRO: PostgreSQL подключен.');
-        console.log('ASTRO: таблицы готовы.');
+        console.log('ASTRO: V2 таблицы готовы.');
+        console.log('ASTRO: старые таблицы не используются.');
     } finally {
         client.release();
     }
 }
 
-/* =========================
-   PASSWORD
-========================= */
+/* =========================================================
+   HELPERS
+========================================================= */
 
 function hashPassword(password) {
     return crypto
@@ -140,37 +164,50 @@ function hashPassword(password) {
         .digest('hex');
 }
 
-/* =========================
-   TOKEN
-========================= */
-
 function createToken() {
     return crypto.randomBytes(32).toString('hex');
 }
 
-/* =========================
-   USER
-========================= */
+function getRank(rankId) {
+    return (
+        RANKS.find((rank) => rank.id === Number(rankId)) ||
+        RANKS[0]
+    );
+}
 
 function publicUser(user) {
-    const rank =
-        RANKS.find(r => r.id === Number(user.rank_id)) ||
-        RANKS[0];
+    const rank = getRank(user.rank_id);
 
     return {
         id: Number(user.id),
         username: user.username,
         money: Number(user.money || 0),
         rating: Number(user.rating || 0),
-        rank: rank.name,
         rank_id: rank.id,
+        rank: rank.name,
         rank_color: rank.color
     };
 }
 
-/* =========================
+function getTokenFromRequest(req) {
+    const authorization = String(
+        req.headers.authorization || ''
+    );
+
+    if (authorization.startsWith('Bearer ')) {
+        return authorization
+            .slice(7)
+            .trim();
+    }
+
+    return String(
+        req.headers['x-session-token'] || ''
+    ).trim();
+}
+
+/* =========================================================
    AUTH
-========================= */
+========================================================= */
 
 async function getUserByToken(token) {
     if (!pool || !token) {
@@ -184,8 +221,8 @@ async function getUserByToken(token) {
             u.money,
             u.rating,
             u.rank_id
-        FROM astro_sessions s
-        JOIN astro_users u
+        FROM astro_v2_sessions s
+        INNER JOIN astro_v2_users u
             ON u.id = s.user_id
         WHERE s.token = $1
         LIMIT 1
@@ -196,17 +233,14 @@ async function getUserByToken(token) {
 
 async function auth(req, res, next) {
     try {
-        const header = req.headers.authorization || '';
-
-        let token = '';
-
-        if (header.startsWith('Bearer ')) {
-            token = header.substring(7).trim();
+        if (!pool) {
+            return res.status(503).json({
+                ok: false,
+                error: 'База данных не подключена'
+            });
         }
 
-        if (!token) {
-            token = String(req.headers['x-session-token'] || '').trim();
-        }
+        const token = getTokenFromRequest(req);
 
         if (!token) {
             return res.status(401).json({
@@ -238,9 +272,9 @@ async function auth(req, res, next) {
     }
 }
 
-/* =========================
+/* =========================================================
    HEALTH
-========================= */
+========================================================= */
 
 app.get('/health', async (req, res) => {
     let database = false;
@@ -249,22 +283,45 @@ app.get('/health', async (req, res) => {
         try {
             await pool.query('SELECT 1');
             database = true;
-        } catch (_) {
-            database = false;
+        } catch (error) {
+            console.error('HEALTH DB ERROR:', error.message);
         }
     }
 
     res.json({
         ok: true,
-        server: 'ASTRO ONLINE',
+        server: 'ASTRO ONLINE V2',
         database,
         time: new Date().toISOString()
     });
 });
 
-/* =========================
-   RANKS API
-========================= */
+/* =========================================================
+   API INFO
+========================================================= */
+
+app.get('/api', (req, res) => {
+    res.json({
+        ok: true,
+        name: 'ASTRO ONLINE V2',
+        version: '2.0.0',
+        endpoints: [
+            'POST /api/register',
+            'POST /api/login',
+            'POST /api/logout',
+            'GET /api/profile',
+            'GET /api/ranks',
+            'POST /api/ranks/buy',
+            'GET /api/rating',
+            'POST /api/rating/add',
+            'GET /api/money'
+        ]
+    });
+});
+
+/* =========================================================
+   RANKS
+========================================================= */
 
 app.get('/api/ranks', (req, res) => {
     res.json({
@@ -273,26 +330,35 @@ app.get('/api/ranks', (req, res) => {
     });
 });
 
-/* =========================
+/* =========================================================
    REGISTER
-========================= */
+========================================================= */
 
 app.post('/api/register', async (req, res) => {
+    if (!pool) {
+        return res.status(503).json({
+            ok: false,
+            error: 'База данных не подключена'
+        });
+    }
+
     try {
-        if (!pool) {
-            return res.status(503).json({
-                ok: false,
-                error: 'База данных не подключена'
-            });
-        }
+        const username = String(
+            req.body.username || ''
+        ).trim();
 
-        const username = String(req.body.username || '').trim();
-        const password = String(req.body.password || '');
+        const password = String(
+            req.body.password || ''
+        );
 
-        if (!/^[a-zA-Zа-яА-ЯёЁ0-9_]{3,32}$/.test(username)) {
+        if (
+            !/^[a-zA-Zа-яА-ЯёЁ0-9_]{3,32}$/.test(
+                username
+            )
+        ) {
             return res.status(400).json({
                 ok: false,
-                error: 'Логин: от 3 до 32 символов'
+                error: 'Логин должен содержать от 3 до 32 символов'
             });
         }
 
@@ -305,10 +371,12 @@ app.post('/api/register', async (req, res) => {
 
         const passwordHash = hashPassword(password);
 
-        const exists = await pool.query(
-            `SELECT id FROM astro_users WHERE username = $1 LIMIT 1`,
-            [username]
-        );
+        const exists = await pool.query(`
+            SELECT id
+            FROM astro_v2_users
+            WHERE username = $1
+            LIMIT 1
+        `, [username]);
 
         if (exists.rows.length > 0) {
             return res.status(409).json({
@@ -318,22 +386,54 @@ app.post('/api/register', async (req, res) => {
         }
 
         const created = await pool.query(`
-            INSERT INTO astro_users
-                (username, password_hash, money, rating, rank_id)
+            INSERT INTO astro_v2_users
+                (
+                    username,
+                    password_hash,
+                    money,
+                    rating,
+                    rank_id
+                )
             VALUES
-                ($1, $2, 1000, 0, 1)
-            RETURNING id, username, money, rating, rank_id
-        `, [username, passwordHash]);
+                (
+                    $1,
+                    $2,
+                    1000,
+                    0,
+                    1
+                )
+            RETURNING
+                id,
+                username,
+                money,
+                rating,
+                rank_id
+        `, [
+            username,
+            passwordHash
+        ]);
 
         const user = created.rows[0];
+
         const token = createToken();
 
         await pool.query(`
-            INSERT INTO astro_sessions(token, user_id)
-            VALUES($1, $2)
-        `, [token, user.id]);
+            INSERT INTO astro_v2_sessions
+                (
+                    token,
+                    user_id
+                )
+            VALUES
+                (
+                    $1,
+                    $2
+                )
+        `, [
+            token,
+            user.id
+        ]);
 
-        res.json({
+        return res.status(201).json({
             ok: true,
             token,
             user: publicUser(user)
@@ -342,28 +442,40 @@ app.post('/api/register', async (req, res) => {
     } catch (error) {
         console.error('REGISTER ERROR:', error);
 
-        res.status(500).json({
+        if (error.code === '23505') {
+            return res.status(409).json({
+                ok: false,
+                error: 'Такой пользователь уже существует'
+            });
+        }
+
+        return res.status(500).json({
             ok: false,
             error: 'Ошибка регистрации'
         });
     }
 });
 
-/* =========================
+/* =========================================================
    LOGIN
-========================= */
+========================================================= */
 
 app.post('/api/login', async (req, res) => {
-    try {
-        if (!pool) {
-            return res.status(503).json({
-                ok: false,
-                error: 'База данных не подключена'
-            });
-        }
+    if (!pool) {
+        return res.status(503).json({
+            ok: false,
+            error: 'База данных не подключена'
+        });
+    }
 
-        const username = String(req.body.username || '').trim();
-        const password = String(req.body.password || '');
+    try {
+        const username = String(
+            req.body.username || ''
+        ).trim();
+
+        const password = String(
+            req.body.password || ''
+        );
 
         if (!username || !password) {
             return res.status(400).json({
@@ -380,7 +492,7 @@ app.post('/api/login', async (req, res) => {
                 money,
                 rating,
                 rank_id
-            FROM astro_users
+            FROM astro_v2_users
             WHERE username = $1
             LIMIT 1
         `, [username]);
@@ -394,7 +506,9 @@ app.post('/api/login', async (req, res) => {
 
         const user = result.rows[0];
 
-        if (hashPassword(password) !== user.password_hash) {
+        const passwordHash = hashPassword(password);
+
+        if (passwordHash !== user.password_hash) {
             return res.status(401).json({
                 ok: false,
                 error: 'Неверный логин или пароль'
@@ -404,11 +518,22 @@ app.post('/api/login', async (req, res) => {
         const token = createToken();
 
         await pool.query(`
-            INSERT INTO astro_sessions(token, user_id)
-            VALUES($1, $2)
-        `, [token, user.id]);
+            INSERT INTO astro_v2_sessions
+                (
+                    token,
+                    user_id
+                )
+            VALUES
+                (
+                    $1,
+                    $2
+                )
+        `, [
+            token,
+            user.id
+        ]);
 
-        res.json({
+        return res.json({
             ok: true,
             token,
             user: publicUser(user)
@@ -417,41 +542,41 @@ app.post('/api/login', async (req, res) => {
     } catch (error) {
         console.error('LOGIN ERROR:', error);
 
-        res.status(500).json({
+        return res.status(500).json({
             ok: false,
             error: 'Ошибка входа'
         });
     }
 });
 
-/* =========================
+/* =========================================================
    LOGOUT
-========================= */
+========================================================= */
 
 app.post('/api/logout', auth, async (req, res) => {
     try {
-        await pool.query(
-            `DELETE FROM astro_sessions WHERE token = $1`,
-            [req.token]
-        );
+        await pool.query(`
+            DELETE FROM astro_v2_sessions
+            WHERE token = $1
+        `, [req.token]);
 
-        res.json({
+        return res.json({
             ok: true
         });
 
     } catch (error) {
         console.error('LOGOUT ERROR:', error);
 
-        res.status(500).json({
+        return res.status(500).json({
             ok: false,
             error: 'Ошибка выхода'
         });
     }
 });
 
-/* =========================
+/* =========================================================
    PROFILE
-========================= */
+========================================================= */
 
 app.get('/api/profile', auth, async (req, res) => {
     try {
@@ -462,7 +587,7 @@ app.get('/api/profile', auth, async (req, res) => {
                 money,
                 rating,
                 rank_id
-            FROM astro_users
+            FROM astro_v2_users
             WHERE id = $1
             LIMIT 1
         `, [req.user.id]);
@@ -474,7 +599,7 @@ app.get('/api/profile', auth, async (req, res) => {
             });
         }
 
-        res.json({
+        return res.json({
             ok: true,
             user: publicUser(result.rows[0])
         });
@@ -482,16 +607,16 @@ app.get('/api/profile', auth, async (req, res) => {
     } catch (error) {
         console.error('PROFILE ERROR:', error);
 
-        res.status(500).json({
+        return res.status(500).json({
             ok: false,
             error: 'Ошибка профиля'
         });
     }
 });
 
-/* =========================
+/* =========================================================
    BUY RANK
-========================= */
+========================================================= */
 
 app.post('/api/ranks/buy', auth, async (req, res) => {
     const rankId = Number(req.body.rank_id);
@@ -503,7 +628,9 @@ app.post('/api/ranks/buy', auth, async (req, res) => {
         });
     }
 
-    const rank = RANKS.find(r => r.id === rankId);
+    const rank = RANKS.find(
+        (item) => item.id === rankId
+    );
 
     if (!rank) {
         return res.status(404).json({
@@ -518,8 +645,13 @@ app.post('/api/ranks/buy', auth, async (req, res) => {
         await client.query('BEGIN');
 
         const result = await client.query(`
-            SELECT id, username, money, rating, rank_id
-            FROM astro_users
+            SELECT
+                id,
+                username,
+                money,
+                rating,
+                rank_id
+            FROM astro_v2_users
             WHERE id = $1
             FOR UPDATE
         `, [req.user.id]);
@@ -534,6 +666,7 @@ app.post('/api/ranks/buy', auth, async (req, res) => {
         }
 
         const user = result.rows[0];
+
         const money = Number(user.money);
         const currentRankId = Number(user.rank_id);
 
@@ -557,35 +690,40 @@ app.post('/api/ranks/buy', auth, async (req, res) => {
             });
         }
 
-        const newMoney = money - rank.price;
-
         const updated = await client.query(`
-            UPDATE astro_users
+            UPDATE astro_v2_users
             SET
-                money = $1,
+                money = money - $1,
                 rank_id = $2
             WHERE id = $3
-            RETURNING id, username, money, rating, rank_id
+            RETURNING
+                id,
+                username,
+                money,
+                rating,
+                rank_id
         `, [
-            newMoney,
-            rankId,
-            req.user.id
+            rank.price,
+            rank.id,
+            user.id
         ]);
 
         await client.query('COMMIT');
 
-        res.json({
+        return res.json({
             ok: true,
             message: `Ранг "${rank.name}" успешно куплен`,
             user: publicUser(updated.rows[0])
         });
 
     } catch (error) {
-        await client.query('ROLLBACK');
+        try {
+            await client.query('ROLLBACK');
+        } catch (_) {}
 
         console.error('BUY RANK ERROR:', error);
 
-        res.status(500).json({
+        return res.status(500).json({
             ok: false,
             error: 'Ошибка покупки ранга'
         });
@@ -594,37 +732,41 @@ app.post('/api/ranks/buy', auth, async (req, res) => {
     }
 });
 
-/* =========================
+/* =========================================================
    RATING
-========================= */
+========================================================= */
 
 app.get('/api/rating', async (req, res) => {
-    try {
-        if (!pool) {
-            return res.json({
-                ok: true,
-                players: []
-            });
-        }
+    if (!pool) {
+        return res.json({
+            ok: true,
+            players: []
+        });
+    }
 
+    try {
         const result = await pool.query(`
             SELECT
                 id,
                 username,
-                rating,
                 money,
+                rating,
                 rank_id
-            FROM astro_users
-            ORDER BY rating DESC, id ASC
+            FROM astro_v2_users
+            ORDER BY
+                rating DESC,
+                id ASC
             LIMIT 100
         `);
 
-        const players = result.rows.map((user, index) => ({
-            place: index + 1,
-            ...publicUser(user)
-        }));
+        const players = result.rows.map(
+            (user, index) => ({
+                place: index + 1,
+                ...publicUser(user)
+            })
+        );
 
-        res.json({
+        return res.json({
             ok: true,
             players
         });
@@ -632,21 +774,26 @@ app.get('/api/rating', async (req, res) => {
     } catch (error) {
         console.error('RATING ERROR:', error);
 
-        res.status(500).json({
+        return res.status(500).json({
             ok: false,
             error: 'Ошибка рейтинга'
         });
     }
 });
 
-/* =========================
+/* =========================================================
    ADD RATING
-========================= */
+========================================================= */
 
 app.post('/api/rating/add', auth, async (req, res) => {
-    const amount = Number(req.body.amount || 0);
+    const amount = Number(
+        req.body.amount
+    );
 
-    if (!Number.isFinite(amount) || amount === 0) {
+    if (
+        !Number.isFinite(amount) ||
+        amount === 0
+    ) {
         return res.status(400).json({
             ok: false,
             error: 'Неверное количество рейтинга'
@@ -655,10 +802,16 @@ app.post('/api/rating/add', auth, async (req, res) => {
 
     try {
         const result = await pool.query(`
-            UPDATE astro_users
-            SET rating = rating + $1
+            UPDATE astro_v2_users
+            SET
+                rating = rating + $1
             WHERE id = $2
-            RETURNING id, username, money, rating, rank_id
+            RETURNING
+                id,
+                username,
+                money,
+                rating,
+                rank_id
         `, [
             Math.trunc(amount),
             req.user.id
@@ -671,7 +824,7 @@ app.post('/api/rating/add', auth, async (req, res) => {
             });
         }
 
-        res.json({
+        return res.json({
             ok: true,
             user: publicUser(result.rows[0])
         });
@@ -679,33 +832,34 @@ app.post('/api/rating/add', auth, async (req, res) => {
     } catch (error) {
         console.error('ADD RATING ERROR:', error);
 
-        res.status(500).json({
+        return res.status(500).json({
             ok: false,
             error: 'Ошибка изменения рейтинга'
         });
     }
 });
 
-/* =========================
+/* =========================================================
    MONEY
-========================= */
+========================================================= */
 
 app.get('/api/money', auth, async (req, res) => {
     try {
         const result = await pool.query(`
             SELECT money
-            FROM astro_users
+            FROM astro_v2_users
             WHERE id = $1
+            LIMIT 1
         `, [req.user.id]);
 
-        if (!result.rows.length) {
+        if (result.rows.length === 0) {
             return res.status(404).json({
                 ok: false,
                 error: 'Пользователь не найден'
             });
         }
 
-        res.json({
+        return res.json({
             ok: true,
             money: Number(result.rows[0].money)
         });
@@ -713,58 +867,141 @@ app.get('/api/money', auth, async (req, res) => {
     } catch (error) {
         console.error('MONEY ERROR:', error);
 
-        res.status(500).json({
+        return res.status(500).json({
             ok: false,
             error: 'Ошибка получения денег'
         });
     }
 });
 
-/* =========================
-   STATIC
-========================= */
+/* =========================================================
+   STATIC FILES
+========================================================= */
 
-app.use(express.static(path.join(__dirname, 'public')));
+app.use(
+    express.static(
+        path.join(__dirname, 'public')
+    )
+);
 
-app.get('*', (req, res) => {
-    res.sendFile(
-        path.join(__dirname, 'public', 'index.html')
-    );
+/*
+ * SPA fallback.
+ *
+ * Для Express 5 используем обычный middleware,
+ * а не app.get('*'), чтобы не получить
+ * очередную ошибку маршрута.
+ */
+
+app.use((req, res, next) => {
+    if (
+        req.method === 'GET' &&
+        !req.path.startsWith('/api/')
+    ) {
+        return res.sendFile(
+            path.join(
+                __dirname,
+                'public',
+                'index.html'
+            )
+        );
+    }
+
+    next();
 });
 
-/* =========================
+/* =========================================================
+   404
+========================================================= */
+
+app.use((req, res) => {
+    res.status(404).json({
+        ok: false,
+        error: 'Маршрут не найден'
+    });
+});
+
+/* =========================================================
+   ERROR HANDLER
+========================================================= */
+
+app.use((error, req, res, next) => {
+    console.error('EXPRESS ERROR:', error);
+
+    if (res.headersSent) {
+        return next(error);
+    }
+
+    res.status(500).json({
+        ok: false,
+        error: 'Внутренняя ошибка сервера'
+    });
+});
+
+/* =========================================================
    START
-========================= */
+========================================================= */
 
 async function start() {
     try {
         await initDatabase();
 
-        app.listen(PORT, '0.0.0.0', () => {
-            console.log('================================');
-            console.log('ASTRO ONLINE');
-            console.log(`Server started on port ${PORT}`);
-            console.log('================================');
-        });
+        app.listen(
+            PORT,
+            '0.0.0.0',
+            () => {
+                console.log('');
+                console.log('========================================');
+                console.log('        ASTRO ONLINE V2');
+                console.log('========================================');
+                console.log(
+                    `Server started on port ${PORT}`
+                );
+                console.log(
+                    'Database mode: astro_v2'
+                );
+                console.log(
+                    'Old tables are NOT used.'
+                );
+                console.log('========================================');
+                console.log('');
+            }
+        );
 
     } catch (error) {
-        console.error('FATAL SERVER ERROR:');
+        console.error('');
+        console.error('========================================');
+        console.error('FATAL SERVER ERROR');
+        console.error('========================================');
         console.error(error);
+        console.error('========================================');
 
-        /*
-         * Не оставляем Render с непонятным зависанием.
-         */
         process.exit(1);
     }
-}
-
-process.on('unhandledRejection', error => {
-    console.error('UNHANDLED REJECTION:', error);
 });
 
-process.on('uncaughtException', error => {
-    console.error('UNCAUGHT EXCEPTION:', error);
-});
+/* =========================================================
+   PROCESS ERRORS
+========================================================= */
+
+process.on(
+    'unhandledRejection',
+    (error) => {
+        console.error(
+            'UNHANDLED REJECTION:',
+            error
+        );
+    }
+);
+
+process.on(
+    'uncaughtException',
+    (error) => {
+        console.error(
+            'UNCAUGHT EXCEPTION:',
+            error
+        );
+    }
+);
 
 start();
 ```

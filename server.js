@@ -1,960 +1,1223 @@
-const express = require("express");
+# Новый server.js
+
+```js
+"use strict";
+
 const http = require("http");
-const path = require("path");
 const fs = require("fs");
+const path = require("path");
 const crypto = require("crypto");
-const { Server } = require("socket.io");
+const { URL } = require("url");
 
-const app = express();
-const server = http.createServer(app);
-const io = new Server(server);
+const PORT = Number(process.env.PORT) || 3000;
 
-const PORT = process.env.PORT || 3000;
-const DATA_FILE = path.join(__dirname, "data.json");
+const HOST = "0.0.0.0";
 
-app.use(express.json({ limit: "1mb" }));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(__dirname));
+/*
+========================================================
+ ASTRO ONLINE
+ SERVER WITHOUT EXPRESS / SOCKET.IO / DATABASE
+========================================================
 
-/* =========================================================
-   DATABASE
-========================================================= */
+ Запуск:
 
-const DEFAULT_DATA = {
-    users: [],
-    ranks: [
-        {
-            id: "bronze",
-            rankId: "bronze",
-            name: "BRONZE",
-            title: "Начинающий",
-            price: 1000,
-            color: "#cd7f32",
-            icon: "🥉"
-        },
-        {
-            id: "silver",
-            rankId: "silver",
-            name: "SILVER",
-            title: "Опытный",
-            price: 5000,
-            color: "#c0c0c0",
-            icon: "🥈"
-        },
-        {
-            id: "gold",
-            rankId: "gold",
-            name: "GOLD",
-            title: "Элитный",
-            price: 15000,
-            color: "#ffd700",
-            icon: "🥇"
-        },
-        {
-            id: "diamond",
-            rankId: "diamond",
-            name: "DIAMOND",
-            title: "Мастер",
-            price: 50000,
-            color: "#55ddff",
-            icon: "💎"
-        }
-    ],
-    quests: [
-        {
-            id: "welcome",
-            questId: "welcome",
-            title: "Добро пожаловать",
-            description: "Получите стартовую награду.",
-            reward: 500,
-            xp: 100
-        }
-    ]
-};
+   node server.js
 
-function loadData() {
-    try {
-        if (!fs.existsSync(DATA_FILE)) {
-            fs.writeFileSync(
-                DATA_FILE,
-                JSON.stringify(DEFAULT_DATA, null, 2),
-                "utf8"
-            );
-            return JSON.parse(JSON.stringify(DEFAULT_DATA));
-        }
+ Потом открыть:
 
-        const raw = fs.readFileSync(DATA_FILE, "utf8");
-        const data = JSON.parse(raw);
+   http://localhost:3000
 
-        if (!Array.isArray(data.users)) data.users = [];
-        if (!Array.isArray(data.ranks)) data.ranks = [];
-        if (!Array.isArray(data.quests)) data.quests = [];
+ Никаких npm install не требуется.
+ Никакого data.json не требуется.
+*/
 
-        return data;
-    } catch (err) {
-        console.error("Ошибка чтения data.json:", err);
+/* ======================================================
+   IN-MEMORY DATABASE
+====================================================== */
 
-        fs.writeFileSync(
-            DATA_FILE,
-            JSON.stringify(DEFAULT_DATA, null, 2),
-            "utf8"
-        );
-
-        return JSON.parse(JSON.stringify(DEFAULT_DATA));
-    }
-}
-
-let db = loadData();
-
-function saveData() {
-    try {
-        fs.writeFileSync(
-            DATA_FILE,
-            JSON.stringify(db, null, 2),
-            "utf8"
-        );
-        return true;
-    } catch (err) {
-        console.error("Ошибка сохранения:", err);
-        return false;
-    }
-}
-
-/* =========================================================
-   PASSWORD
-========================================================= */
-
-function hashPassword(password) {
-    const salt = crypto.randomBytes(16).toString("hex");
-
-    const hash = crypto
-        .scryptSync(password, salt, 64)
-        .toString("hex");
-
-    return `${salt}:${hash}`;
-}
-
-function checkPassword(password, stored) {
-    try {
-        const parts = String(stored).split(":");
-
-        if (parts.length !== 2) return false;
-
-        const salt = parts[0];
-        const oldHash = parts[1];
-
-        const newHash = crypto
-            .scryptSync(password, salt, 64)
-            .toString("hex");
-
-        return crypto.timingSafeEqual(
-            Buffer.from(oldHash, "hex"),
-            Buffer.from(newHash, "hex")
-        );
-    } catch {
-        return false;
-    }
-}
-
-/* =========================================================
-   TOKENS
-========================================================= */
-
+const users = new Map();
+const ranks = new Map();
+const quests = new Map();
 const sessions = new Map();
 
-function createToken(userId) {
-    const token = crypto.randomBytes(32).toString("hex");
+/* ======================================================
+   ADMIN
+====================================================== */
 
-    sessions.set(token, {
-        userId,
-        created: Date.now()
+const ADMIN_EMAIL = "admin@astro.local";
+const ADMIN_PASSWORD = "admin123";
+
+/* ======================================================
+   HELPERS
+====================================================== */
+
+function id() {
+    return crypto.randomUUID();
+}
+
+function hashPassword(password) {
+    return crypto
+        .createHash("sha256")
+        .update(String(password))
+        .digest("hex");
+}
+
+function createToken() {
+    return crypto.randomBytes(32).toString("hex");
+}
+
+function json(res, status, data) {
+    const body = JSON.stringify(data);
+
+    res.writeHead(status, {
+        "Content-Type": "application/json; charset=utf-8",
+        "Content-Length": Buffer.byteLength(body),
+        "Cache-Control": "no-store",
+        "Access-Control-Allow-Origin": "*"
     });
 
-    return token;
+    res.end(body);
 }
 
-function getUserFromToken(token) {
-    if (!token) return null;
+function text(res, status, body, contentType = "text/plain; charset=utf-8") {
+    res.writeHead(status, {
+        "Content-Type": contentType,
+        "Content-Length": Buffer.byteLength(body),
+        "Cache-Control": "no-store"
+    });
 
-    const session = sessions.get(token);
-
-    if (!session) return null;
-
-    const user = db.users.find(
-        u => u.id === session.userId
-    );
-
-    return user || null;
+    res.end(body);
 }
 
-function auth(req, res, next) {
-    const header = req.headers.authorization || "";
+function error(res, status, message) {
+    return json(res, status, {
+        error: message
+    });
+}
 
-    if (!header.startsWith("Bearer ")) {
-        return res.status(401).json({
-            error: "Вы не авторизованы"
+function getBody(req) {
+    return new Promise((resolve, reject) => {
+        let body = "";
+
+        req.on("data", chunk => {
+            body += chunk;
+
+            if (body.length > 2 * 1024 * 1024) {
+                reject(new Error("Слишком большой запрос"));
+                req.destroy();
+            }
         });
+
+        req.on("end", () => {
+            if (!body) {
+                resolve({});
+                return;
+            }
+
+            try {
+                resolve(JSON.parse(body));
+            } catch {
+                reject(new Error("Неверный JSON"));
+            }
+        });
+
+        req.on("error", reject);
+    });
+}
+
+function cleanString(value, max = 100) {
+    return String(value ?? "")
+        .trim()
+        .slice(0, max);
+}
+
+function number(value, fallback = 0) {
+    const n = Number(value);
+
+    if (!Number.isFinite(n)) {
+        return fallback;
     }
 
-    const token = header.slice(7);
-    const user = getUserFromToken(token);
-
-    if (!user) {
-        return res.status(401).json({
-            error: "Сессия недействительна"
-        });
-    }
-
-    req.token = token;
-    req.user = user;
-
-    next();
+    return n;
 }
-
-function admin(req, res, next) {
-    if (!req.user.admin) {
-        return res.status(403).json({
-            error: "Нет доступа к админке"
-        });
-    }
-
-    next();
-}
-
-/* =========================================================
-   USER PUBLIC DATA
-========================================================= */
 
 function publicUser(user) {
-    if (!user) return null;
-
     return {
         id: user.id,
         username: user.username,
         email: user.email,
-        balance: Number(user.balance || 0),
-        elo: Number(user.elo || 0),
-        xp: Number(user.xp || 0),
-        wins: Number(user.wins || 0),
-        ownedRanks: Array.isArray(user.ownedRanks)
-            ? user.ownedRanks
-            : [],
-        rankId: user.rankId || null,
-        admin: Boolean(user.admin)
+        balance: user.balance,
+        elo: user.elo,
+        xp: user.xp,
+        wins: user.wins,
+        rankId: user.rankId,
+        ownedRanks: [...user.ownedRanks],
+        claimedQuests: [...user.claimedQuests],
+        isAdmin: user.isAdmin
     };
 }
 
-/* =========================================================
-   ROOT
-========================================================= */
+function publicRank(rank) {
+    return {
+        id: rank.id,
+        rankId: rank.rankId,
+        name: rank.name,
+        title: rank.title,
+        price: rank.price,
+        color: rank.color,
+        icon: rank.icon
+    };
+}
 
-app.get("/", (req, res) => {
-    res.sendFile(path.join(__dirname, "index.html"));
-});
+function publicQuest(quest) {
+    return {
+        id: quest.id,
+        questId: quest.questId,
+        title: quest.title,
+        description: quest.description,
+        reward: quest.reward,
+        xp: quest.xp
+    };
+}
 
-/* =========================================================
+/* ======================================================
+   DEFAULT DATA
+====================================================== */
+
+function createDefaultData() {
+
+    const admin = {
+        id: id(),
+        username: "Admin",
+        email: ADMIN_EMAIL,
+        password: hashPassword(ADMIN_PASSWORD),
+
+        balance: 999999999,
+        elo: 9999,
+        xp: 999999,
+        wins: 999,
+
+        rankId: "admin",
+        ownedRanks: ["admin"],
+
+        claimedQuests: [],
+
+        isAdmin: true
+    };
+
+    users.set(admin.id, admin);
+
+    const defaultRanks = [
+        {
+            id: id(),
+            rankId: "bronze",
+            name: "BRONZE",
+            title: "Бронзовый",
+            price: 500,
+            color: "#cd7f32",
+            icon: "🥉"
+        },
+        {
+            id: id(),
+            rankId: "silver",
+            name: "SILVER",
+            title: "Серебряный",
+            price: 1500,
+            color: "#c0c0c0",
+            icon: "🥈"
+        },
+        {
+            id: id(),
+            rankId: "gold",
+            name: "GOLD",
+            title: "Золотой",
+            price: 5000,
+            color: "#ffd700",
+            icon: "🥇"
+        },
+        {
+            id: id(),
+            rankId: "diamond",
+            name: "DIAMOND",
+            title: "Алмазный",
+            price: 15000,
+            color: "#55ddff",
+            icon: "💎"
+        },
+        {
+            id: id(),
+            rankId: "legend",
+            name: "LEGEND",
+            title: "Легендарный",
+            price: 50000,
+            color: "#ff4fd8",
+            icon: "👑"
+        }
+    ];
+
+    for (const rank of defaultRanks) {
+        ranks.set(rank.rankId, rank);
+    }
+
+    const defaultQuests = [
+        {
+            id: id(),
+            questId: "first-win",
+            title: "Первая победа",
+            description: "Получите свою первую победу.",
+            reward: 500,
+            xp: 100
+        },
+        {
+            id: id(),
+            questId: "elo-hunter",
+            title: "Охотник за ELO",
+            description: "Поднимите свой рейтинг.",
+            reward: 1000,
+            xp: 250
+        }
+    ];
+
+    for (const quest of defaultQuests) {
+        quests.set(quest.questId, quest);
+    }
+}
+
+createDefaultData();
+
+/* ======================================================
    AUTH
-========================================================= */
+====================================================== */
 
-app.post("/api/register", (req, res) => {
-    try {
-        const username = String(req.body.username || "").trim();
-        const email = String(req.body.email || "").trim().toLowerCase();
-        const password = String(req.body.password || "");
+function getToken(req) {
 
-        if (username.length < 3) {
-            return res.status(400).json({
-                error: "Никнейм должен содержать минимум 3 символа"
-            });
+    const header = req.headers.authorization || "";
+
+    if (!header.startsWith("Bearer ")) {
+        return null;
+    }
+
+    return header.slice(7).trim() || null;
+}
+
+function getUser(req) {
+
+    const token = getToken(req);
+
+    if (!token) {
+        return null;
+    }
+
+    const userId = sessions.get(token);
+
+    if (!userId) {
+        return null;
+    }
+
+    return users.get(userId) || null;
+}
+
+function requireAuth(req, res) {
+
+    const user = getUser(req);
+
+    if (!user) {
+        error(res, 401, "Необходимо войти в аккаунт");
+        return null;
+    }
+
+    return user;
+}
+
+function requireAdmin(req, res) {
+
+    const user = requireAuth(req, res);
+
+    if (!user) {
+        return null;
+    }
+
+    if (!user.isAdmin) {
+        error(res, 403, "Доступ только для администратора");
+        return null;
+    }
+
+    return user;
+}
+
+/* ======================================================
+   ROUTER
+====================================================== */
+
+async function handleApi(req, res, pathname, query) {
+
+    /* ---------------- LOGIN ---------------- */
+
+    if (req.method === "POST" && pathname === "/api/login") {
+
+        let body;
+
+        try {
+            body = await getBody(req);
+        } catch {
+            return error(res, 400, "Неверный JSON");
         }
 
-        if (username.length > 30) {
-            return res.status(400).json({
-                error: "Никнейм слишком длинный"
-            });
+        const email = cleanString(body.email, 200).toLowerCase();
+        const password = String(body.password ?? "");
+
+        if (!email || !password) {
+            return error(res, 400, "Введите email и пароль");
         }
 
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-            return res.status(400).json({
-                error: "Введите правильный Email"
-            });
+        let user = null;
+
+        for (const candidate of users.values()) {
+
+            if (candidate.email.toLowerCase() === email) {
+                user = candidate;
+                break;
+            }
         }
 
-        if (password.length < 6) {
-            return res.status(400).json({
-                error: "Пароль должен содержать минимум 6 символов"
-            });
+        if (!user) {
+            return error(res, 401, "Неверный email или пароль");
         }
 
-        const emailExists = db.users.some(
-            u => u.email.toLowerCase() === email
-        );
-
-        if (emailExists) {
-            return res.status(409).json({
-                error: "Этот Email уже зарегистрирован"
-            });
+        if (user.password !== hashPassword(password)) {
+            return error(res, 401, "Неверный email или пароль");
         }
 
-        const usernameExists = db.users.some(
-            u => u.username.toLowerCase() === username.toLowerCase()
-        );
+        const token = createToken();
 
-        if (usernameExists) {
-            return res.status(409).json({
-                error: "Этот никнейм уже занят"
-            });
+        sessions.set(token, user.id);
+
+        return json(res, 200, {
+            success: true,
+            token,
+            user: publicUser(user)
+        });
+    }
+
+    /* ---------------- REGISTER ---------------- */
+
+    if (req.method === "POST" && pathname === "/api/register") {
+
+        let body;
+
+        try {
+            body = await getBody(req);
+        } catch {
+            return error(res, 400, "Неверный JSON");
+        }
+
+        const username = cleanString(body.username, 30);
+        const email = cleanString(body.email, 200).toLowerCase();
+        const password = String(body.password ?? "");
+
+        if (username.length < 2) {
+            return error(res, 400, "Никнейм слишком короткий");
+        }
+
+        if (!email.includes("@")) {
+            return error(res, 400, "Введите правильный email");
+        }
+
+        if (password.length < 4) {
+            return error(res, 400, "Пароль должен содержать минимум 4 символа");
+        }
+
+        for (const user of users.values()) {
+
+            if (user.email.toLowerCase() === email) {
+                return error(res, 409, "Этот email уже зарегистрирован");
+            }
+
+            if (user.username.toLowerCase() === username.toLowerCase()) {
+                return error(res, 409, "Этот никнейм уже занят");
+            }
         }
 
         const user = {
-            id: crypto.randomUUID(),
+            id: id(),
             username,
             email,
             password: hashPassword(password),
 
-            balance: 10000,
+            balance: 1000,
             elo: 1000,
             xp: 0,
             wins: 0,
 
+            rankId: "bronze",
             ownedRanks: [],
-            rankId: null,
 
             claimedQuests: [],
 
-            admin: db.users.length === 0,
-
-            createdAt: Date.now()
+            isAdmin: false
         };
 
-        db.users.push(user);
+        users.set(user.id, user);
 
-        saveData();
+        const token = createToken();
 
-        const token = createToken(user.id);
+        sessions.set(token, user.id);
 
-        return res.json({
-            ok: true,
+        return json(res, 201, {
+            success: true,
             token,
             user: publicUser(user)
         });
-
-    } catch (err) {
-        console.error("REGISTER:", err);
-
-        res.status(500).json({
-            error: "Ошибка регистрации"
-        });
     }
-});
 
-app.post("/api/login", (req, res) => {
-    try {
-        const email = String(req.body.email || "")
-            .trim()
-            .toLowerCase();
+    /* ---------------- LOGOUT ---------------- */
 
-        const password = String(req.body.password || "");
+    if (req.method === "POST" && pathname === "/api/logout") {
 
-        if (!email || !password) {
-            return res.status(400).json({
-                error: "Введите Email и пароль"
-            });
+        const token = getToken(req);
+
+        if (token) {
+            sessions.delete(token);
         }
 
-        const user = db.users.find(
-            u => u.email.toLowerCase() === email
-        );
+        return json(res, 200, {
+            success: true
+        });
+    }
+
+    /* ---------------- ME ---------------- */
+
+    if (req.method === "GET" && pathname === "/api/me") {
+
+        const user = requireAuth(req, res);
 
         if (!user) {
-            return res.status(401).json({
-                error: "Неверный Email или пароль"
-            });
+            return;
         }
 
-        if (!checkPassword(password, user.password)) {
-            return res.status(401).json({
-                error: "Неверный Email или пароль"
-            });
-        }
-
-        const token = createToken(user.id);
-
-        res.json({
-            ok: true,
-            token,
+        return json(res, 200, {
             user: publicUser(user)
         });
+    }
 
-    } catch (err) {
-        console.error("LOGIN:", err);
+    /* ---------------- RANKS ---------------- */
 
-        res.status(500).json({
-            error: "Ошибка авторизации"
+    if (req.method === "GET" && pathname === "/api/ranks") {
+
+        return json(res, 200, {
+            ranks: [...ranks.values()].map(publicRank)
         });
     }
-});
 
-app.post("/api/logout", auth, (req, res) => {
-    sessions.delete(req.token);
+    /* ---------------- BUY RANK ---------------- */
 
-    res.json({
-        ok: true
-    });
-});
+    const buyMatch =
+        pathname.match(/^\/api\/ranks\/([^/]+)\/buy$/);
 
-app.get("/api/me", auth, (req, res) => {
-    res.json({
-        ok: true,
-        user: publicUser(req.user)
-    });
-});
+    if (req.method === "POST" && buyMatch) {
 
-/* =========================================================
-   RANK SYSTEM
-========================================================= */
+        const user = requireAuth(req, res);
 
-function getRankForUser(user) {
-    if (!user || !user.rankId) return null;
+        if (!user) {
+            return;
+        }
 
-    return db.ranks.find(
-        r => r.rankId === user.rankId || r.id === user.rankId
-    ) || null;
-}
+        const rankId = decodeURIComponent(buyMatch[1]);
 
-app.get("/api/ranks", (req, res) => {
-    res.json({
-        ok: true,
-        ranks: db.ranks
-    });
-});
-
-app.get("/api/my-rank", auth, (req, res) => {
-    res.json({
-        ok: true,
-        rank: getRankForUser(req.user)
-    });
-});
-
-app.post("/api/ranks/:id/buy", auth, (req, res) => {
-    try {
-        const rank = db.ranks.find(
-            r =>
-                r.rankId === req.params.id ||
-                r.id === req.params.id
-        );
+        const rank = ranks.get(rankId);
 
         if (!rank) {
-            return res.status(404).json({
-                error: "Ранг не найден"
-            });
+            return error(res, 404, "Ранг не найден");
         }
 
-        if (!Array.isArray(req.user.ownedRanks)) {
-            req.user.ownedRanks = [];
+        if (user.ownedRanks.includes(rankId)) {
+            return error(res, 400, "Этот ранг уже куплен");
         }
 
-        const alreadyOwned =
-            req.user.ownedRanks.includes(rank.rankId);
-
-        if (alreadyOwned) {
-            return res.status(400).json({
-                error: "Этот ранг уже куплен"
-            });
+        if (user.balance < rank.price) {
+            return error(res, 400, "Недостаточно денег");
         }
 
-        const price = Number(rank.price || 0);
+        user.balance -= rank.price;
 
-        if (Number(req.user.balance || 0) < price) {
-            return res.status(400).json({
-                error: "Недостаточно денег"
-            });
-        }
+        user.ownedRanks.push(rankId);
 
-        /* ДЕНЬГИ ДЕЙСТВИТЕЛЬНО СПИСЫВАЮТСЯ */
-        req.user.balance -= price;
+        /*
+         Покупка также делает ранг текущим.
+        */
+        user.rankId = rankId;
 
-        /* РАНГ ДЕЙСТВИТЕЛЬНО ДОБАВЛЯЕТСЯ */
-        req.user.ownedRanks.push(rank.rankId);
-
-        /* ПОКУПАЕМЫЙ РАНГ СТАНОВИТСЯ ТЕКУЩИМ */
-        req.user.rankId = rank.rankId;
-
-        saveData();
-
-        io.emit("leaderboard:update");
-
-        res.json({
-            ok: true,
+        return json(res, 200, {
+            success: true,
             message: "Ранг куплен",
-            user: publicUser(req.user),
-            rank
-        });
-
-    } catch (err) {
-        console.error("BUY RANK:", err);
-
-        res.status(500).json({
-            error: "Ошибка покупки ранга"
+            rank: publicRank(rank),
+            user: publicUser(user)
         });
     }
-});
 
-/* =========================================================
-   QUESTS
-========================================================= */
+    /* ---------------- SET CURRENT RANK ---------------- */
 
-app.get("/api/quests", (req, res) => {
-    res.json({
-        ok: true,
-        quests: db.quests
-    });
-});
+    const setRankMatch =
+        pathname.match(/^\/api\/ranks\/([^/]+)\/equip$/);
 
-app.post("/api/quests/:id/claim", auth, (req, res) => {
-    try {
-        const quest = db.quests.find(
-            q =>
-                q.questId === req.params.id ||
-                q.id === req.params.id
-        );
+    if (req.method === "POST" && setRankMatch) {
+
+        const user = requireAuth(req, res);
+
+        if (!user) {
+            return;
+        }
+
+        const rankId = decodeURIComponent(setRankMatch[1]);
+
+        const rank = ranks.get(rankId);
+
+        if (!rank) {
+            return error(res, 404, "Ранг не найден");
+        }
+
+        if (!user.ownedRanks.includes(rankId)) {
+            return error(res, 403, "Сначала купите этот ранг");
+        }
+
+        user.rankId = rankId;
+
+        return json(res, 200, {
+            success: true,
+            user: publicUser(user)
+        });
+    }
+
+    /* ---------------- QUESTS ---------------- */
+
+    if (req.method === "GET" && pathname === "/api/quests") {
+
+        return json(res, 200, {
+            quests: [...quests.values()].map(publicQuest)
+        });
+    }
+
+    /* ---------------- CLAIM QUEST ---------------- */
+
+    const claimMatch =
+        pathname.match(/^\/api\/quests\/([^/]+)\/claim$/);
+
+    if (req.method === "POST" && claimMatch) {
+
+        const user = requireAuth(req, res);
+
+        if (!user) {
+            return;
+        }
+
+        const questId = decodeURIComponent(claimMatch[1]);
+
+        const quest = quests.get(questId);
 
         if (!quest) {
-            return res.status(404).json({
-                error: "Квест не найден"
-            });
+            return error(res, 404, "Квест не найден");
         }
 
-        if (!Array.isArray(req.user.claimedQuests)) {
-            req.user.claimedQuests = [];
+        if (user.claimedQuests.includes(questId)) {
+            return error(res, 400, "Этот квест уже выполнен");
         }
 
-        if (req.user.claimedQuests.includes(quest.questId)) {
-            return res.status(400).json({
-                error: "Этот квест уже выполнен"
-            });
-        }
+        user.balance += quest.reward;
+        user.xp += quest.xp;
 
-        const reward = Number(quest.reward || 0);
-        const xp = Number(quest.xp || 0);
+        user.claimedQuests.push(questId);
 
-        req.user.balance += reward;
-        req.user.xp += xp;
-
-        req.user.claimedQuests.push(
-            quest.questId
-        );
-
-        saveData();
-
-        io.emit("leaderboard:update");
-
-        res.json({
-            ok: true,
-            reward,
-            xp,
-            user: publicUser(req.user)
-        });
-
-    } catch (err) {
-        console.error("QUEST:", err);
-
-        res.status(500).json({
-            error: "Ошибка выполнения квеста"
+        return json(res, 200, {
+            success: true,
+            reward: quest.reward,
+            xp: quest.xp,
+            user: publicUser(user)
         });
     }
-});
 
-/* =========================================================
-   LEADERBOARD
-========================================================= */
+    /* ---------------- LEADERBOARD ---------------- */
 
-app.get("/api/leaderboard", (req, res) => {
-    const players = db.users
-        .map(publicUser)
-        .sort((a, b) => {
-            return Number(b.elo) - Number(a.elo);
-        });
+    if (req.method === "GET" && pathname === "/api/leaderboard") {
 
-    res.json({
-        ok: true,
-        players
-    });
-});
+        const players = [...users.values()]
+            .sort((a, b) => {
 
-/* =========================================================
-   ADMIN - USERS
-========================================================= */
+                if (b.elo !== a.elo) {
+                    return b.elo - a.elo;
+                }
 
-app.get(
-    "/api/admin/users",
-    auth,
-    admin,
-    (req, res) => {
-        const search = String(
-            req.query.search || ""
-        ).trim().toLowerCase();
+                if (b.xp !== a.xp) {
+                    return b.xp - a.xp;
+                }
 
-        let users = db.users;
+                return b.wins - a.wins;
+            })
+            .map(user => ({
+                id: user.id,
+                username: user.username,
+                elo: user.elo,
+                xp: user.xp,
+                wins: user.wins,
+                rankId: user.rankId
+            }));
 
-        if (search) {
-            users = users.filter(u =>
-                u.username.toLowerCase().includes(search) ||
-                u.email.toLowerCase().includes(search)
-            );
-        }
-
-        res.json({
-            ok: true,
-            users: users.map(publicUser)
+        return json(res, 200, {
+            players
         });
     }
-);
 
-app.put(
-    "/api/admin/users/:id",
-    auth,
-    admin,
-    (req, res) => {
-        const user = db.users.find(
-            u => u.id === req.params.id
-        );
+    /* ==================================================
+       ADMIN
+    ================================================== */
+
+    /* ---------------- ADMIN USERS ---------------- */
+
+    if (
+        req.method === "GET" &&
+        pathname === "/api/admin/users"
+    ) {
+
+        const admin = requireAdmin(req, res);
+
+        if (!admin) {
+            return;
+        }
+
+        const search =
+            cleanString(query.get("search") || "", 100)
+                .toLowerCase();
+
+        const result = [...users.values()]
+            .filter(user => {
+
+                if (!search) {
+                    return true;
+                }
+
+                return (
+                    user.username.toLowerCase().includes(search) ||
+                    user.email.toLowerCase().includes(search)
+                );
+            })
+            .map(user => ({
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                balance: user.balance,
+                elo: user.elo,
+                xp: user.xp,
+                wins: user.wins,
+                rankId: user.rankId,
+                isAdmin: user.isAdmin
+            }));
+
+        return json(res, 200, {
+            users: result
+        });
+    }
+
+    /* ---------------- ADMIN UPDATE USER ---------------- */
+
+    const adminUserMatch =
+        pathname.match(/^\/api\/admin\/users\/([^/]+)$/);
+
+    if (
+        (req.method === "PUT" || req.method === "PATCH") &&
+        adminUserMatch
+    ) {
+
+        const admin = requireAdmin(req, res);
+
+        if (!admin) {
+            return;
+        }
+
+        const userId = decodeURIComponent(adminUserMatch[1]);
+
+        const user = users.get(userId);
 
         if (!user) {
-            return res.status(404).json({
-                error: "Игрок не найден"
-            });
+            return error(res, 404, "Игрок не найден");
         }
 
-        if (req.body.elo !== undefined) {
-            user.elo = Math.max(
-                0,
-                Number(req.body.elo) || 0
-            );
+        let body;
+
+        try {
+            body = await getBody(req);
+        } catch {
+            return error(res, 400, "Неверный JSON");
         }
 
-        if (req.body.wins !== undefined) {
-            user.wins = Math.max(
-                0,
-                Number(req.body.wins) || 0
-            );
+        if (body.elo !== undefined) {
+            user.elo = Math.max(0, Math.floor(number(body.elo)));
         }
 
-        if (req.body.balance !== undefined) {
+        if (body.xp !== undefined) {
+            user.xp = Math.max(0, Math.floor(number(body.xp)));
+        }
+
+        if (body.wins !== undefined) {
+            user.wins = Math.max(0, Math.floor(number(body.wins)));
+        }
+
+        if (body.balance !== undefined) {
             user.balance = Math.max(
                 0,
-                Number(req.body.balance) || 0
+                Math.floor(number(body.balance))
             );
         }
 
-        if (req.body.xp !== undefined) {
-            user.xp = Math.max(
-                0,
-                Number(req.body.xp) || 0
-            );
+        if (body.rankId !== undefined) {
+
+            const rankId = cleanString(body.rankId, 100);
+
+            if (rankId === "" || ranks.has(rankId)) {
+                user.rankId = rankId;
+            }
         }
 
-        if (req.body.rankId !== undefined) {
-            user.rankId =
-                req.body.rankId || null;
-        }
-
-        saveData();
-
-        io.emit("leaderboard:update");
-
-        res.json({
-            ok: true,
+        return json(res, 200, {
+            success: true,
             user: publicUser(user)
         });
     }
-);
 
-/* =========================================================
-   ADMIN - GIVE
-========================================================= */
+    /* ---------------- ADMIN RANKS ---------------- */
 
-app.post(
-    "/api/admin/users/:id/give",
-    auth,
-    admin,
-    (req, res) => {
-        const user = db.users.find(
-            u => u.id === req.params.id
-        );
+    if (
+        req.method === "GET" &&
+        pathname === "/api/admin/ranks"
+    ) {
 
-        if (!user) {
-            return res.status(404).json({
-                error: "Игрок не найден"
-            });
+        const admin = requireAdmin(req, res);
+
+        if (!admin) {
+            return;
         }
 
-        const money = Number(req.body.money || 0);
-        const elo = Number(req.body.elo || 0);
-        const xp = Number(req.body.xp || 0);
-        const wins = Number(req.body.wins || 0);
-
-        user.balance += money;
-        user.elo += elo;
-        user.xp += xp;
-        user.wins += wins;
-
-        saveData();
-
-        io.emit("leaderboard:update");
-
-        res.json({
-            ok: true,
-            user: publicUser(user)
+        return json(res, 200, {
+            ranks: [...ranks.values()].map(publicRank)
         });
     }
-);
 
-/* =========================================================
-   ADMIN - RANKS
-========================================================= */
+    if (
+        req.method === "POST" &&
+        pathname === "/api/admin/ranks"
+    ) {
 
-app.get(
-    "/api/admin/ranks",
-    auth,
-    admin,
-    (req, res) => {
-        res.json({
-            ok: true,
-            ranks: db.ranks
-        });
-    }
-);
+        const admin = requireAdmin(req, res);
 
-app.post(
-    "/api/admin/ranks",
-    auth,
-    admin,
-    (req, res) => {
-        const rankId = String(
-            req.body.rankId || ""
-        ).trim();
-
-        const name = String(
-            req.body.name || ""
-        ).trim();
-
-        if (!rankId || !name) {
-            return res.status(400).json({
-                error: "ID и название обязательны"
-            });
+        if (!admin) {
+            return;
         }
 
-        if (
-            db.ranks.some(
-                r => r.rankId === rankId
-            )
-        ) {
-            return res.status(409).json({
-                error: "Такой ранг уже существует"
-            });
+        let body;
+
+        try {
+            body = await getBody(req);
+        } catch {
+            return error(res, 400, "Неверный JSON");
+        }
+
+        const rankId = cleanString(body.rankId, 50);
+
+        if (!rankId) {
+            return error(res, 400, "Введите ID ранга");
+        }
+
+        if (ranks.has(rankId)) {
+            return error(res, 409, "Такой ранг уже существует");
         }
 
         const rank = {
-            id: crypto.randomUUID(),
+            id: id(),
             rankId,
-            name,
-            title: String(req.body.title || ""),
-            price: Math.max(
-                0,
-                Number(req.body.price) || 0
-            ),
-            color: String(
-                req.body.color || "#9b7cff"
-            ),
-            icon: String(
-                req.body.icon || "★"
-            )
+            name: cleanString(body.name, 50) || rankId,
+            title: cleanString(body.title, 100) || "Новый ранг",
+            price: Math.max(0, Math.floor(number(body.price))),
+            color: cleanString(body.color, 30) || "#9b7cff",
+            icon: cleanString(body.icon, 10) || "★"
         };
 
-        db.ranks.push(rank);
+        ranks.set(rankId, rank);
 
-        saveData();
-
-        io.emit("ranks:update");
-
-        res.json({
-            ok: true,
-            rank
+        return json(res, 201, {
+            success: true,
+            rank: publicRank(rank)
         });
     }
-);
 
-app.delete(
-    "/api/admin/ranks/:id",
-    auth,
-    admin,
-    (req, res) => {
-        const index = db.ranks.findIndex(
-            r =>
-                r.id === req.params.id ||
-                r.rankId === req.params.id
-        );
+    const adminRankMatch =
+        pathname.match(/^\/api\/admin\/ranks\/([^/]+)$/);
 
-        if (index === -1) {
-            return res.status(404).json({
-                error: "Ранг не найден"
-            });
+    if (
+        req.method === "DELETE" &&
+        adminRankMatch
+    ) {
+
+        const admin = requireAdmin(req, res);
+
+        if (!admin) {
+            return;
         }
 
-        db.ranks.splice(index, 1);
+        const idValue =
+            decodeURIComponent(adminRankMatch[1]);
 
-        saveData();
-
-        io.emit("ranks:update");
-
-        res.json({
-            ok: true
-        });
-    }
-);
-
-/* =========================================================
-   ADMIN - QUESTS
-========================================================= */
-
-app.get(
-    "/api/admin/quests",
-    auth,
-    admin,
-    (req, res) => {
-        res.json({
-            ok: true,
-            quests: db.quests
-        });
-    }
-);
-
-app.post(
-    "/api/admin/quests",
-    auth,
-    admin,
-    (req, res) => {
-        const questId = String(
-            req.body.questId || ""
-        ).trim();
-
-        const title = String(
-            req.body.title || ""
-        ).trim();
-
-        if (!questId || !title) {
-            return res.status(400).json({
-                error: "ID и название обязательны"
-            });
+        if (!ranks.has(idValue)) {
+            return error(res, 404, "Ранг не найден");
         }
 
-        if (
-            db.quests.some(
-                q => q.questId === questId
-            )
-        ) {
-            return res.status(409).json({
-                error: "Такой квест уже существует"
-            });
+        /*
+        Нельзя удалить текущий стартовый бронзовый ранг.
+        */
+        if (idValue === "bronze") {
+            return error(res, 400, "Нельзя удалить стартовый ранг");
+        }
+
+        ranks.delete(idValue);
+
+        for (const user of users.values()) {
+
+            user.ownedRanks =
+                user.ownedRanks.filter(x => x !== idValue);
+
+            if (user.rankId === idValue) {
+                user.rankId = "bronze";
+            }
+        }
+
+        return json(res, 200, {
+            success: true
+        });
+    }
+
+    /* ---------------- ADMIN QUESTS ---------------- */
+
+    if (
+        req.method === "GET" &&
+        pathname === "/api/admin/quests"
+    ) {
+
+        const admin = requireAdmin(req, res);
+
+        if (!admin) {
+            return;
+        }
+
+        return json(res, 200, {
+            quests: [...quests.values()].map(publicQuest)
+        });
+    }
+
+    if (
+        req.method === "POST" &&
+        pathname === "/api/admin/quests"
+    ) {
+
+        const admin = requireAdmin(req, res);
+
+        if (!admin) {
+            return;
+        }
+
+        let body;
+
+        try {
+            body = await getBody(req);
+        } catch {
+            return error(res, 400, "Неверный JSON");
+        }
+
+        const questId = cleanString(body.questId, 50);
+
+        if (!questId) {
+            return error(res, 400, "Введите ID квеста");
+        }
+
+        if (quests.has(questId)) {
+            return error(res, 409, "Такой квест уже существует");
         }
 
         const quest = {
-            id: crypto.randomUUID(),
+            id: id(),
             questId,
-            title,
-            description: String(
-                req.body.description || ""
-            ),
-            reward: Math.max(
-                0,
-                Number(req.body.reward) || 0
-            ),
-            xp: Math.max(
-                0,
-                Number(req.body.xp) || 0
-            )
+            title:
+                cleanString(body.title, 100) ||
+                "Новый квест",
+
+            description:
+                cleanString(body.description, 500) ||
+                "Описание отсутствует",
+
+            reward:
+                Math.max(
+                    0,
+                    Math.floor(number(body.reward))
+                ),
+
+            xp:
+                Math.max(
+                    0,
+                    Math.floor(number(body.xp))
+                )
         };
 
-        db.quests.push(quest);
+        quests.set(questId, quest);
 
-        saveData();
-
-        io.emit("quests:update");
-
-        res.json({
-            ok: true,
-            quest
+        return json(res, 201, {
+            success: true,
+            quest: publicQuest(quest)
         });
     }
-);
 
-app.delete(
-    "/api/admin/quests/:id",
-    auth,
-    admin,
-    (req, res) => {
-        const index = db.quests.findIndex(
-            q =>
-                q.id === req.params.id ||
-                q.questId === req.params.id
-        );
+    const adminQuestMatch =
+        pathname.match(/^\/api\/admin\/quests\/([^/]+)$/);
 
-        if (index === -1) {
-            return res.status(404).json({
-                error: "Квест не найден"
-            });
+    if (
+        req.method === "DELETE" &&
+        adminQuestMatch
+    ) {
+
+        const admin = requireAdmin(req, res);
+
+        if (!admin) {
+            return;
         }
 
-        db.quests.splice(index, 1);
+        const questId =
+            decodeURIComponent(adminQuestMatch[1]);
 
-        saveData();
+        if (!quests.has(questId)) {
+            return error(res, 404, "Квест не найден");
+        }
 
-        io.emit("quests:update");
+        quests.delete(questId);
 
-        res.json({
-            ok: true
+        for (const user of users.values()) {
+            user.claimedQuests =
+                user.claimedQuests.filter(x => x !== questId);
+        }
+
+        return json(res, 200, {
+            success: true
         });
     }
-);
 
-/* =========================================================
-   SOCKET.IO
-========================================================= */
+    /* ---------------- HEALTH ---------------- */
 
-io.on("connection", socket => {
-    console.log("Клиент подключён:", socket.id);
+    if (
+        req.method === "GET" &&
+        pathname === "/api/health"
+    ) {
 
-    socket.on("disconnect", () => {
-        console.log("Клиент отключён:", socket.id);
+        return json(res, 200, {
+            ok: true,
+            server: "ASTRO ONLINE",
+            users: users.size,
+            ranks: ranks.size,
+            quests: quests.size
+        });
+    }
+
+    return error(res, 404, "API маршрут не найден");
+}
+
+/* ======================================================
+   STATIC FILES
+====================================================== */
+
+function serveIndex(res) {
+
+    const file = path.join(__dirname, "index.html");
+
+    if (!fs.existsSync(file)) {
+
+        return text(
+            res,
+            404,
+            "index.html не найден. Положи index.html рядом с server.js."
+        );
+    }
+
+    const html = fs.readFileSync(file);
+
+    res.writeHead(200, {
+        "Content-Type": "text/html; charset=utf-8",
+        "Content-Length": html.length,
+        "Cache-Control": "no-cache"
     });
+
+    res.end(html);
+}
+
+function serveStatic(res, pathname) {
+
+    if (pathname === "/" || pathname === "/index.html") {
+        return serveIndex(res);
+    }
+
+    /*
+    Разрешаем только несколько безопасных статических файлов.
+    */
+
+    const allowed = {
+        ".html": "text/html; charset=utf-8",
+        ".css": "text/css; charset=utf-8",
+        ".js": "application/javascript; charset=utf-8",
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".svg": "image/svg+xml",
+        ".ico": "image/x-icon"
+    };
+
+    const ext = path.extname(pathname).toLowerCase();
+
+    if (!allowed[ext]) {
+        return error(res, 404, "Файл не найден");
+    }
+
+    const safePath =
+        path.normalize(
+            path.join(__dirname, pathname)
+        );
+
+    if (!safePath.startsWith(__dirname)) {
+        return error(res, 403, "Доступ запрещён");
+    }
+
+    if (!fs.existsSync(safePath)) {
+        return error(res, 404, "Файл не найден");
+    }
+
+    try {
+
+        const file = fs.readFileSync(safePath);
+
+        res.writeHead(200, {
+            "Content-Type": allowed[ext],
+            "Content-Length": file.length,
+            "Cache-Control": "no-cache"
+        });
+
+        res.end(file);
+
+    } catch {
+        error(res, 500, "Не удалось открыть файл");
+    }
+}
+
+/* ======================================================
+   HTTP SERVER
+====================================================== */
+
+const server = http.createServer(async (req, res) => {
+
+    try {
+
+        if (req.method === "OPTIONS") {
+
+            res.writeHead(204, {
+                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Methods":
+                    "GET,POST,PUT,PATCH,DELETE,OPTIONS",
+                "Access-Control-Allow-Headers":
+                    "Content-Type, Authorization"
+            });
+
+            res.end();
+
+            return;
+        }
+
+        const parsed = new URL(
+            req.url,
+            `http://${req.headers.host || "localhost"}`
+        );
+
+        const pathname = parsed.pathname;
+
+        if (pathname.startsWith("/api/")) {
+
+            await handleApi(
+                req,
+                res,
+                pathname,
+                parsed.searchParams
+            );
+
+            return;
+        }
+
+        if (req.method !== "GET" && req.method !== "HEAD") {
+
+            error(
+                res,
+                405,
+                "Метод не поддерживается"
+            );
+
+            return;
+        }
+
+        serveStatic(res, pathname);
+
+    } catch (err) {
+
+        console.error("SERVER ERROR:", err);
+
+        if (!res.headersSent) {
+            error(
+                res,
+                500,
+                "Внутренняя ошибка сервера"
+            );
+        } else {
+            res.end();
+        }
+    }
 });
 
-/* =========================================================
-   ERRORS
-========================================================= */
-
-app.use((err, req, res, next) => {
-    console.error("SERVER ERROR:", err);
-
-    res.status(500).json({
-        error: "Внутренняя ошибка сервера"
-    });
-});
-
-/* =========================================================
+/* ======================================================
    START
-========================================================= */
+====================================================== */
 
-server.listen(PORT, () => {
+server.listen(PORT, HOST, () => {
+
     console.log("");
-    console.log("====================================");
-    console.log("       ASTRO ONLINE SERVER");
-    console.log("====================================");
+    console.log("======================================");
+    console.log("        ASTRO ONLINE SERVER");
+    console.log("======================================");
+    console.log("");
     console.log(`Сайт: http://localhost:${PORT}`);
-    console.log(`Пользователей: ${db.users.length}`);
-    console.log(`Рангов: ${db.ranks.length}`);
-    console.log(`Квестов: ${db.quests.length}`);
-    console.log("====================================");
+    console.log("");
+    console.log("АДМИН:");
+    console.log(`Email: ${ADMIN_EMAIL}`);
+    console.log(`Пароль: ${ADMIN_PASSWORD}`);
+    console.log("");
+    console.log("API:");
+    console.log(`http://localhost:${PORT}/api/health`);
+    console.log("");
+    console.log("Сервер запущен.");
+    console.log("======================================");
     console.log("");
 });
+
+/* ======================================================
+   GRACEFUL SHUTDOWN
+====================================================== */
+
+function shutdown() {
+
+    console.log("\nОстановка ASTRO SERVER...");
+
+    server.close(() => {
+        console.log("Сервер остановлен.");
+        process.exit(0);
+    });
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+```

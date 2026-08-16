@@ -1,0 +1,937 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#070812">
+<meta name="description" content="ASTRO SITE V2 PRO MAX — игровой портал нового поколения.">
+<title>ASTRO SITE V2 PRO MAX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#05060b;--bg2:#080a13;--panel:rgba(14,17,30,.76);--panel2:rgba(18,21,38,.9);--line:rgba(255,255,255,.09);--line2:rgba(255,255,255,.16);--text:#f7f8ff;--muted:#8f96ad;--cyan:#64e9ff;--violet:#8f78ff;--pink:#ff55c8;--green:#8cffb2;--red:#ff6d87;--yellow:#ffd76a;--shadow:0 28px 100px rgba(0,0,0,.5);--radius:26px}*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;min-height:100vh;background:radial-gradient(circle at 50% -20%,#161932 0,#080913 35%,#05060b 72%);color:var(--text);font:15px/1.55 Inter,system-ui,sans-serif;overflow-x:hidden}.hidden{display:none!important}button,input{font:inherit}button{cursor:pointer}.aurora,.stars,#particles{position:fixed;inset:0;pointer-events:none}.aurora{z-index:-4;filter:blur(90px);opacity:.3;border-radius:50%;animation:drift 12s ease-in-out infinite}.aurora-1{width:600px;height:600px;left:-250px;top:-250px;background:#4521ff}.aurora-2{width:520px;height:520px;right:-230px;top:90px;background:#007eac;animation-delay:-4s}.aurora-3{width:440px;height:440px;left:35%;bottom:-300px;background:#9d1f82;animation-delay:-8s}.stars{z-index:-5;opacity:.55;background-image:radial-gradient(circle,rgba(255,255,255,.75) 1px,transparent 1.4px),radial-gradient(circle,rgba(100,233,255,.35) 1px,transparent 1.4px);background-size:100px 100px,170px 170px;background-position:10px 20px,40px 70px}.topbar{position:sticky;top:0;z-index:50;min-height:78px;padding:11px clamp(14px,4vw,64px);display:flex;align-items:center;gap:22px;border-bottom:1px solid rgba(255,255,255,.07);background:rgba(5,6,11,.62);backdrop-filter:blur(26px) saturate(145%);transition:.35s}.topbar.scrolled{background:rgba(5,6,11,.92);box-shadow:0 18px 60px rgba(0,0,0,.35)}.brand{display:flex;align-items:center;gap:11px;text-decoration:none;color:#fff;min-width:205px}.brand-mark{width:44px;height:44px;display:grid;place-items:center;border-radius:15px;padding:2px;background:conic-gradient(from 0deg,var(--cyan),var(--violet),var(--pink),var(--cyan));box-shadow:0 0 35px rgba(100,233,255,.18);animation:spin 10s linear infinite}.brand-mark span{width:100%;height:100%;display:grid;place-items:center;border-radius:13px;background:#080912;font:900 19px 'Space Grotesk';animation:spinReverse 10s linear infinite}.brand-text{display:flex;flex-direction:column;line-height:1}.brand-text strong{font:800 19px 'Space Grotesk';letter-spacing:.11em}.brand-text em{margin-top:5px;font:600 8px Inter;color:#737b93;letter-spacing:.22em;font-style:normal}.nav{display:flex;align-items:center;justify-content:center;gap:4px;flex:1}.nav-item{position:relative;display:flex;align-items:center;gap:8px;border:1px solid transparent;background:transparent;color:#858da6;padding:11px 14px;border-radius:14px;transition:.25s;font-weight:700;font-size:13px}.nav-item:hover{color:#fff;background:rgba(255,255,255,.045);transform:translateY(-1px)}.nav-item.active{color:#fff;background:linear-gradient(135deg,rgba(100,233,255,.12),rgba(143,120,255,.13));border-color:rgba(255,255,255,.09);box-shadow:inset 0 1px rgba(255,255,255,.05),0 8px 30px rgba(0,0,0,.2)}.nav-item.active:after{content:'';position:absolute;left:25%;right:25%;bottom:-12px;height:2px;border-radius:5px;background:linear-gradient(90deg,var(--cyan),var(--violet),var(--pink));box-shadow:0 0 16px var(--cyan)}.nav-icon{font-size:15px;opacity:.75}.top-actions{display:flex;align-items:center;gap:8px;min-width:205px;justify-content:flex-end}.icon-btn,.menu-btn{border:1px solid var(--line);background:rgba(255,255,255,.035);color:#a7aec2;border-radius:12px;padding:9px 10px}.icon-btn{font-size:11px;font-weight:800;letter-spacing:.05em}.icon-btn:hover,.menu-btn:hover{color:#fff;border-color:var(--line2);background:rgba(255,255,255,.07)}.menu-btn{display:none}.account-pill{display:flex;align-items:center;gap:9px;padding:6px 9px 6px 6px;border:1px solid var(--line);background:rgba(255,255,255,.04);border-radius:14px;color:#fff}.account-pill:hover{border-color:var(--line2);background:rgba(255,255,255,.065)}.mini-avatar{width:32px;height:32px;display:grid;place-items:center;border-radius:10px;background:linear-gradient(135deg,var(--cyan),var(--violet));color:#05060b;font-weight:900}.account-pill b{font-size:12px}.account-pill small{display:block;color:var(--green);font-size:10px}.btn{position:relative;display:inline-flex;align-items:center;justify-content:center;gap:12px;border-radius:14px;padding:12px 17px;border:1px solid transparent;font-weight:800;transition:.25s;overflow:hidden}.btn-primary{color:#05060b;background:linear-gradient(100deg,var(--cyan),#8fffd5 43%,var(--violet));box-shadow:0 15px 40px rgba(100,233,255,.17)}.btn-primary:hover{transform:translateY(-2px);box-shadow:0 20px 55px rgba(100,233,255,.27)}.btn-primary:before{content:'';position:absolute;inset:-100% auto -100% -30%;width:20%;transform:rotate(20deg);background:#fff8;filter:blur(9px);animation:sweep 4s infinite}.btn-secondary{color:#fff;background:rgba(255,255,255,.045);border-color:var(--line)}.btn-secondary:hover{background:rgba(255,255,255,.08);border-color:var(--line2);transform:translateY(-2px)}.btn-large{width:100%;padding:14px 18px}.app{width:min(1240px,calc(100% - 28px));margin:0 auto;padding:44px 0 85px}.hero{display:grid;grid-template-columns:minmax(0,1.5fr) 360px;gap:16px}.hero-main{position:relative;min-height:570px;overflow:hidden;padding:clamp(30px,5vw,68px);border:1px solid var(--line);border-radius:32px;background:linear-gradient(145deg,rgba(20,23,42,.88),rgba(7,9,17,.86));box-shadow:var(--shadow)}.hero-main:before{content:'';position:absolute;width:720px;height:720px;right:-350px;top:-340px;border-radius:50%;background:radial-gradient(circle,rgba(100,233,255,.22),rgba(143,120,255,.1) 35%,transparent 68%);animation:heroPulse 6s ease-in-out infinite}.hero-main:after{content:'ASTRO';position:absolute;right:-25px;bottom:-55px;color:rgba(255,255,255,.018);font:900 170px/.8 'Space Grotesk';letter-spacing:-.09em;transform:rotate(-8deg)}.hero-content{position:relative;z-index:2;max-width:760px}.eyebrow{font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--cyan);font-weight:900}.hero h1{margin:18px 0 20px;font:700 clamp(50px,7vw,91px)/.88 'Space Grotesk';letter-spacing:-.075em}.gradient{background:linear-gradient(100deg,#fff 5%,#9cf7ff 30%,#a58dff 66%,#ff72d5);-webkit-background-clip:text;background-clip:text;color:transparent}.lead{max-width:690px;color:#aeb6ca;font-size:16px}.actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:27px}.ticker{display:flex;gap:9px;flex-wrap:wrap;margin-top:38px}.ticker span{padding:8px 11px;border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:99px;color:#8d95ab;font-size:9px;font-weight:800;letter-spacing:.08em}.hero-side{display:grid;grid-template-rows:1fr 1fr 1fr;gap:10px}.stat-card{position:relative;overflow:hidden;padding:24px;border:1px solid var(--line);border-radius:24px;background:linear-gradient(145deg,rgba(17,20,35,.86),rgba(7,9,17,.82));box-shadow:var(--shadow)}.stat-card:before{content:'';position:absolute;width:140px;height:140px;border-radius:50%;right:-60px;top:-60px;background:radial-gradient(circle,rgba(100,233,255,.18),transparent 70%)}.stat-label{display:block;color:#737c95;font-size:10px;letter-spacing:.15em;text-transform:uppercase}.stat-value{display:block;margin:9px 0 4px;font:800 29px 'Space Grotesk'}.stat-note{color:#8991a8;font-size:12px}.section{margin-top:18px}.section-head{display:flex;justify-content:space-between;align-items:end;gap:20px;margin:42px 3px 15px}.section-head h2{margin:5px 0 0;font:700 31px 'Space Grotesk';letter-spacing:-.04em}.muted{color:var(--muted)}.feature-grid,.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.glass,.product,.quest,.profile-card,.panel{border:1px solid var(--line);background:linear-gradient(145deg,rgba(16,19,34,.82),rgba(8,10,18,.82));box-shadow:var(--shadow);border-radius:24px}.feature{position:relative;overflow:hidden;padding:25px;min-height:205px;transition:.3s}.feature:hover,.product:hover,.quest:hover{transform:translateY(-5px);border-color:rgba(100,233,255,.2);box-shadow:0 28px 70px rgba(0,0,0,.48),0 0 40px rgba(100,233,255,.05)}.feature:after{content:'';position:absolute;width:180px;height:180px;border-radius:50%;right:-100px;bottom:-100px;background:radial-gradient(circle,rgba(143,120,255,.18),transparent 68%)}.feature .icon,.product-icon{width:47px;height:47px;display:grid;place-items:center;border-radius:15px;background:linear-gradient(135deg,rgba(100,233,255,.13),rgba(143,120,255,.16));border:1px solid rgba(255,255,255,.08);font-size:21px}.feature h3,.product h3,.quest h3{margin:20px 0 7px;font:700 20px 'Space Grotesk'}.feature p,.product p,.quest p{margin:0}.panel{overflow:hidden}.table-head,.table-row{display:grid;grid-template-columns:65px 1fr 110px 130px 100px;align-items:center;gap:12px;padding:15px 20px}.table-head{color:#626b83;background:rgba(255,255,255,.025);font-size:10px;text-transform:uppercase;letter-spacing:.12em;font-weight:800}.table-row{border-top:1px solid var(--line);min-height:70px;transition:.2s}.table-row:hover{background:rgba(255,255,255,.035)}.rank{font:800 18px 'Space Grotesk';color:#6d7690}.rank-name{display:flex;align-items:center;gap:12px;font-weight:800}.rank-avatar{width:37px;height:37px;display:grid;place-items:center;border-radius:12px;background:linear-gradient(135deg,#1d2442,#17182b);border:1px solid var(--line);color:#dfe8ff}.rank-badge{padding:6px 9px;border-radius:8px;background:rgba(143,120,255,.1);border:1px solid rgba(143,120,255,.18);color:#c7bcff;font-size:10px;font-weight:900;letter-spacing:.08em}.product,.quest{padding:23px;position:relative;overflow:hidden;animation:rise .5s both}.product-icon{margin-bottom:18px}.price{margin:22px 0 14px;font:800 23px 'Space Grotesk'}.price small{font:600 9px Inter;color:#687188;letter-spacing:.12em}.product .btn{width:100%}.quest .eyebrow{color:var(--green)}.progress{height:6px;margin:20px 0 14px;background:rgba(255,255,255,.06);border-radius:99px;overflow:hidden}.progress i{display:block;width:var(--progress);height:100%;border-radius:inherit;background:linear-gradient(90deg,var(--green),var(--cyan));box-shadow:0 0 16px rgba(140,255,178,.35);transition:.7s}.profile-layout{display:grid;grid-template-columns:390px 1fr;gap:14px}.profile-card{padding:28px}.avatar{width:92px;height:92px;display:grid;place-items:center;margin:22px 0 14px;border-radius:27px;background:linear-gradient(135deg,var(--cyan),var(--violet),var(--pink));color:#05060b;font:900 38px 'Space Grotesk';box-shadow:0 20px 50px rgba(100,233,255,.18);animation:avatarFloat 4s ease-in-out infinite}.profile-name{font:800 29px 'Space Grotesk';letter-spacing:-.04em}.mini-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:23px 0}.mini-stat{padding:13px;border:1px solid var(--line);background:rgba(255,255,255,.025);border-radius:14px}.mini-stat span{display:block;color:#707991;font-size:9px;text-transform:uppercase;letter-spacing:.1em}.mini-stat b{display:block;margin-top:4px;font-size:14px}.field{display:grid;gap:7px;margin:12px 0;color:#8b93a9;font-size:11px;font-weight:800;letter-spacing:.04em}.field input{width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:13px;background:#090b14;color:#fff;outline:none}.field input:focus{border-color:rgba(100,233,255,.5);box-shadow:0 0 0 4px rgba(100,233,255,.06)}.transaction{display:flex;justify-content:space-between;gap:18px;padding:16px 0;border-bottom:1px solid var(--line)}.transaction:last-child{border-bottom:0}.positive{color:var(--green)}.negative{color:var(--red)}.empty{padding:42px;text-align:center;color:#6f778e}.skeleton{height:140px;border-radius:22px;background:linear-gradient(100deg,rgba(255,255,255,.035) 25%,rgba(255,255,255,.085) 42%,rgba(255,255,255,.035) 60%);background-size:300% 100%;animation:skeleton 1.4s infinite}.modal,.command{position:fixed;inset:0;z-index:100;display:grid;place-items:center}.modal-backdrop,.command-backdrop{position:absolute;inset:0;background:rgba(2,3,7,.76);backdrop-filter:blur(18px)}.auth-modal{position:relative;z-index:1;width:min(470px,calc(100% - 24px));padding:31px;border:1px solid var(--line2);border-radius:28px;background:linear-gradient(145deg,rgba(20,23,40,.98),rgba(7,9,16,.98));box-shadow:0 40px 120px rgba(0,0,0,.72);animation:modalIn .35s cubic-bezier(.2,.8,.2,1)}.modal-close{position:absolute;right:13px;top:8px;border:0;background:none;color:#747c92;font-size:29px}.auth-orbit{width:55px;height:55px;display:grid;place-items:center;border-radius:18px;margin-bottom:22px;background:conic-gradient(var(--cyan),var(--violet),var(--pink),var(--cyan));box-shadow:0 0 35px rgba(100,233,255,.2);font:900 21px 'Space Grotesk';animation:spin 8s linear infinite}.auth-orbit span{display:grid;place-items:center;width:47px;height:47px;border-radius:15px;background:#090b14;animation:spinReverse 8s linear infinite}.auth-modal h2{margin:8px 0;font:700 32px 'Space Grotesk'}.auth-tabs{display:flex;gap:4px;padding:4px;margin:20px 0;background:rgba(255,255,255,.035);border:1px solid var(--line);border-radius:14px}.auth-tab{flex:1;border:0;background:transparent;color:#777f95;padding:10px;border-radius:10px;font-weight:800}.auth-tab.active{color:#fff;background:rgba(255,255,255,.08)}.form-error{min-height:19px;color:var(--red);font-size:12px}.command{place-items:start center;padding-top:13vh}.command-card{position:relative;z-index:1;width:min(650px,calc(100% - 24px));padding:11px;border:1px solid var(--line2);border-radius:22px;background:#0a0c15;box-shadow:var(--shadow);animation:modalIn .25s ease}.command-head{display:flex;justify-content:space-between;padding:8px 11px;color:#69728a;font-size:10px;font-weight:900;letter-spacing:.16em}.command-head kbd{padding:3px 6px;border:1px solid var(--line);border-radius:6px;color:#9da6bb}.command-card input{width:100%;border:1px solid var(--line);border-radius:14px;padding:15px;background:#060810;color:#fff;outline:none;font-size:16px}.command-item{display:flex;justify-content:space-between;margin-top:5px;padding:13px 14px;border-radius:12px;color:#cbd2e5;font-weight:700}.command-item:hover{background:rgba(100,233,255,.07);color:#fff}.command-card small{display:block;padding:10px 12px;color:#5f687d;font-size:10px}.toast-stack{position:fixed;right:18px;bottom:18px;z-index:120;display:grid;gap:9px}.toast{min-width:270px;padding:14px 16px;border:1px solid var(--line);border-radius:15px;background:rgba(13,16,27,.96);box-shadow:var(--shadow);animation:toastIn .3s ease}.toast.danger{border-color:rgba(255,109,135,.3)}.footer{width:min(1240px,calc(100% - 28px));margin:auto;padding:20px 0 30px;display:flex;justify-content:space-between;color:#50586d;font-size:9px;font-weight:800;letter-spacing:.14em}.wide{width:100%}@keyframes drift{50%{transform:translate3d(35px,30px,0) scale(1.08)}}@keyframes spin{to{transform:rotate(360deg)}}@keyframes spinReverse{to{transform:rotate(-360deg)}}@keyframes sweep{0%,60%{left:-30%}100%{left:130%}}@keyframes heroPulse{50%{transform:scale(1.08);opacity:.75}}@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}@keyframes avatarFloat{50%{transform:translateY(-4px)}}@keyframes modalIn{from{opacity:0;transform:translateY(18px) scale(.97)}to{opacity:1;transform:none}}@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}@keyframes skeleton{to{background-position:-200% 0}}@media(max-width:980px){.brand{min-width:auto}.nav-item span:last-child{display:none}.hero{grid-template-columns:1fr}.hero-side{grid-template-columns:repeat(3,1fr)}.feature-grid,.grid{grid-template-columns:1fr 1fr}.profile-layout{grid-template-columns:1fr}.top-actions{min-width:auto}.table-head,.table-row{grid-template-columns:55px 1fr 90px 110px}.table-head>:last-child,.table-row>:last-child{display:none}}@media(max-width:650px){.topbar{min-height:68px;flex-wrap:wrap}.brand-text em{display:none}.nav{order:5;width:100%;display:none;overflow:auto;justify-content:flex-start}.nav.open{display:flex}.nav-item span:last-child{display:block}.nav-item.active:after{bottom:0}.command-btn{display:none}.menu-btn{display:block}.account-pill .balance{display:none}.app{width:calc(100% - 18px);padding-top:20px}.hero-main{min-height:520px;padding:28px 22px;border-radius:25px}.hero h1{font-size:51px}.lead{font-size:14px}.hero-side{grid-template-columns:1fr}.feature-grid,.grid{grid-template-columns:1fr}.section-head{align-items:start;flex-direction:column;gap:5px}.section-head h2{font-size:27px}.table-head,.table-row{grid-template-columns:38px 1fr 75px}.table-head>:nth-child(4),.table-row>:nth-child(4),.table-head>:nth-child(5),.table-row>:nth-child(5){display:none}.mini-stats{grid-template-columns:1fr}.footer{flex-wrap:wrap;gap:10px}.actions .btn{width:100%}}
+
+
+.auth-status{min-height:22px;margin:8px 0 12px;font-size:13px;font-weight:700;line-height:1.45}
+.auth-status[data-type="error"]{color:#ff7188}
+.auth-status[data-type="success"]{color:#8cffb2}
+.auth-status:empty{min-height:0;margin:0}
+
+
+.admin-open-btn{border-color:rgba(255,215,106,.18)!important;color:#ffd76a!important}
+.admin-modal{position:relative;width:min(1180px,calc(100vw - 28px));max-height:min(88vh,900px);overflow:hidden;border:1px solid rgba(255,215,106,.18);border-radius:28px;background:linear-gradient(145deg,rgba(12,14,25,.98),rgba(6,8,15,.98));box-shadow:0 40px 120px rgba(0,0,0,.65),0 0 70px rgba(255,215,106,.06);z-index:2}
+.admin-modal .admin-head{display:flex;align-items:center;justify-content:space-between;padding:22px 24px;border-bottom:1px solid var(--line);background:linear-gradient(90deg,rgba(255,215,106,.05),transparent)}
+.admin-title{font:800 25px 'Space Grotesk';margin:0}.admin-shell{display:grid;grid-template-columns:210px 1fr;min-height:560px}
+.admin-side{padding:14px;border-right:1px solid var(--line);background:rgba(255,255,255,.018);overflow:auto}
+.admin-tab{width:100%;text-align:left;border:1px solid transparent;background:transparent;color:var(--muted);padding:11px 12px;border-radius:12px;margin-bottom:6px;font-weight:800}
+.admin-tab:hover,.admin-tab.active{background:rgba(255,215,106,.08);border-color:rgba(255,215,106,.14);color:#fff}
+.admin-content{padding:22px;overflow:auto;max-height:calc(88vh - 85px)}
+.admin-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.admin-stat{padding:17px;border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.025)}
+.admin-stat span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.1em}.admin-stat b{display:block;font:800 25px 'Space Grotesk';margin-top:5px}
+.admin-card{border:1px solid var(--line);border-radius:18px;background:rgba(255,255,255,.025);padding:17px;margin-bottom:14px}
+.admin-card h3{margin:0 0 12px;font:800 17px 'Space Grotesk'}
+.admin-actions{display:flex;gap:8px;flex-wrap:wrap}
+.admin-table{width:100%;border-collapse:collapse;font-size:13px}.admin-table th,.admin-table td{padding:10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}.admin-table th{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em}
+.admin-table input{width:100%;min-width:70px}.admin-table .btn{padding:7px 9px;font-size:11px}
+.admin-badge{display:inline-flex;padding:4px 8px;border-radius:99px;background:rgba(140,255,178,.08);color:#8cffb2;font-size:10px;font-weight:900}.admin-badge.banned{background:rgba(255,109,135,.1);color:#ff6d87}
+.admin-login{width:min(450px,calc(100vw - 30px));padding:28px;border:1px solid rgba(255,215,106,.18);border-radius:26px;background:linear-gradient(145deg,rgba(14,17,30,.98),rgba(7,9,16,.98));box-shadow:0 35px 100px rgba(0,0,0,.7);z-index:2}
+.admin-login h2{font:800 28px 'Space Grotesk';margin:8px 0}
+.admin-error{min-height:20px;color:#ff7188;font-size:13px;font-weight:800;margin:8px 0}
+.admin-form-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.admin-form-grid .field{margin:0}
+.admin-wide{grid-column:1/-1}
+.admin-code{font:12px ui-monospace,SFMono-Regular,Consolas,monospace;color:#9ba4bd;background:rgba(0,0,0,.25);padding:10px;border-radius:10px;word-break:break-all}
+@media(max-width:900px){.admin-shell{grid-template-columns:1fr}.admin-side{display:flex;gap:6px;overflow:auto;border-right:0;border-bottom:1px solid var(--line)}.admin-tab{white-space:nowrap;width:auto;margin:0}.admin-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.admin-content{padding:14px}.admin-grid{grid-template-columns:1fr 1fr}.admin-form-grid{grid-template-columns:1fr}.admin-table{font-size:11px}.admin-table th:nth-child(2),.admin-table td:nth-child(2){display:none}}
+<style>
+.admin-head .actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+#adminApply{box-shadow:0 0 24px rgba(100,233,255,.16)}
+#adminApply[data-dirty="true"]{animation:adminPulse 1.6s infinite}
+#adminApply[data-dirty="false"]{opacity:.65}
+@keyframes adminPulse{0%,100%{box-shadow:0 0 0 rgba(100,233,255,0)}50%{box-shadow:0 0 28px rgba(100,233,255,.3)}}
+.admin-dirty{margin:0 0 14px;padding:10px 13px;border:1px solid rgba(255,215,106,.18);background:rgba(255,215,106,.055);border-radius:12px;color:#ffd76a;font-size:12px;font-weight:800}
+@media(max-width:760px){.admin-head .actions{width:100%}.admin-head .actions .btn{flex:1}.admin-dirty{font-size:11px}}
+<style>.table-row{animation:astroRowIn .55s cubic-bezier(.2,.8,.2,1) both}.elo-live{font-variant-numeric:tabular-nums;font-weight:900}<style>
+.rank-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:18px}
+.rank-card{position:relative;overflow:hidden;animation:astroRowIn .55s cubic-bezier(.2,.8,.2,1) both;transition:transform .35s ease,box-shadow .35s ease,border-color .35s ease}
+.rank-card:before{content:"";position:absolute;inset:-60%;background:radial-gradient(circle,var(--rank-color) 0,transparent 45%);opacity:.08;pointer-events:none}
+.rank-card:hover{transform:translateY(-7px);box-shadow:0 18px 55px rgba(110,231,255,.13)}
+.rank-symbol{font-size:42px;line-height:1;margin-bottom:14px;color:var(--rank-color);filter:drop-shadow(0 0 14px var(--rank-color))}
+</style></style>
+</style>
+</head>
+<body>
+<div class="aurora aurora-1"></div><div class="aurora aurora-2"></div><div class="aurora aurora-3"></div>
+<div class="stars"></div><canvas id="particles" aria-hidden="true"></canvas>
+<header class="topbar" id="topbar">
+  <a class="brand" href="#home" data-route="home" aria-label="ASTRO">
+    <span class="brand-mark"><span>A</span></span>
+    <span class="brand-text"><strong>ASTRO</strong><em>V2 PRO MAX</em></span>
+  </a>
+  <nav class="nav" id="nav">
+    <button class="nav-item active" data-route="home"><span class="nav-icon">⌂</span><span>Главная</span></button>
+    <button class="nav-item" data-route="top"><span class="nav-icon">♛</span><span>Рейтинг</span></button>
+    <button class="nav-item" data-route="ranks"><span class="nav-icon">✦</span> Ранги</button>
+    <button class="nav-item" data-route="quests"><span class="nav-icon">⚡</span><span>Квесты</span></button>
+    <button class="nav-item" data-route="cabinet"><span class="nav-icon">◉</span><span>Профиль</span></button>
+  </nav>
+  <div class="top-actions"><button class="icon-btn admin-open-btn" type="button" data-open-admin title="Админ-панель">ADMIN</button>
+    <button class="icon-btn command-btn" id="commandBtn" title="Командная панель">⌘K</button>
+    <div id="accountMini"></div>
+    <button class="menu-btn" id="mobileMenu" aria-label="Меню">☰</button>
+  </div>
+</header>
+<main id="app" class="app"></main>
+<footer class="footer"><span>ASTRO // V2 PRO MAX</span><span>ONLINE MODE</span><span>NO FIREBASE</span><span>2026</span></footer>
+
+<div class="modal hidden" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+  <div class="modal-backdrop" onclick="ASTRO_AUTH.close()"></div>
+  <div class="auth-modal">
+    <button class="modal-close" type="button" aria-label="Закрыть" onclick="ASTRO_AUTH.close()">×</button>
+    <div class="auth-orbit"><span>A</span></div>
+    <div class="eyebrow">ASTRO ID // SECURE ACCESS</div>
+    <h2 id="authTitle">Войти в ASTRO</h2>
+    <p class="muted">Онлайн ASTRO ID. Аккаунты, рейтинг, XP и баланс синхронизируются через сервер.</p>
+
+    <div class="auth-tabs">
+      <button type="button" class="auth-tab active" id="authLoginTab" onclick="onlineOpenAuth('login')">Вход</button>
+      <button type="button" class="auth-tab" id="authRegisterTab" onclick="ASTRO_AUTH.open('register')">Регистрация</button>
+    </div>
+
+    <form id="authForm" onsubmit="return ASTRO_AUTH.submit(event)" novalidate>
+      <label class="field" id="usernameField">
+        <span>Никнейм</span>
+        <input id="authUsername" name="username" minlength="3" maxlength="20" autocomplete="username" placeholder="NovaPlayer">
+      </label>
+
+      <label class="field">
+        <span>Email</span>
+        <input id="authEmail" name="email" type="email" required autocomplete="email" placeholder="you@example.com">
+      </label>
+
+      <label class="field">
+        <span>Пароль</span>
+        <input id="authPassword" name="password" type="password" minlength="8" required autocomplete="current-password" placeholder="Минимум 8 символов">
+      </label>
+
+      <label class="field" id="confirmPasswordField">
+        <span>Повторите пароль</span>
+        <input id="authConfirm" name="confirmPassword" type="password" minlength="8" autocomplete="new-password" placeholder="Повторите пароль">
+      </label>
+
+      <div class="auth-status" id="authStatus" aria-live="polite"></div>
+
+      <button class="btn btn-primary btn-large" type="submit" id="authSubmit">
+        <span id="authSubmitText">Войти</span><b>→</b>
+      </button>
+
+      <small class="auth-note">
+        Аккаунты сохраняются в этом браузере. Пароль хранится только как хеш.
+      </small>
+    </form>
+  </div>
+</div>
+<div class="command hidden" id="command">
+  <div class="command-backdrop"></div>
+  <div class="command-card">
+    <div class="command-head"><span>ASTRO COMMAND</span><kbd>ESC</kbd></div>
+    <input id="commandInput" placeholder="Куда отправляемся? Например: магазин" autocomplete="off">
+    <div id="commandResults"></div>
+    <small>↑ ↓ выбор · Enter открыть · Esc закрыть</small>
+  </div>
+</div>
+
+<div class="modal hidden" id="adminLoginModal" role="dialog" aria-modal="true">
+  <div class="modal-backdrop" data-admin-close></div>
+  <div class="admin-login">
+    <div class="eyebrow" style="color:#ffd76a">ASTRO CONTROL // ROOT ACCESS</div>
+    <h2>Админ-доступ</h2>
+    <p class="muted">Введите секретный пароль администратора.</p>
+    <form id="adminLoginForm">
+      <label class="field"><span>Пароль</span><input id="adminPassword" type="password" autocomplete="off" placeholder="Введите пароль" required></label>
+      <div class="admin-error" id="adminLoginError"></div>
+      <div class="actions"><button class="btn btn-primary" type="submit">Открыть панель <b>→</b></button><button class="btn btn-secondary" type="button" data-admin-close>Отмена</button></div>
+    </form>
+  </div>
+</div>
+
+<div class="modal hidden" id="adminPanelModal" role="dialog" aria-modal="true">
+  <div class="modal-backdrop" data-admin-panel-close></div>
+  <div class="admin-modal">
+    <div class="admin-head">
+      <div><div class="eyebrow" style="color:#ffd76a">ASTRO CONTROL CENTER</div><h2 class="admin-title">Админ-панель</h2></div>
+      <div class="actions">
+<button class="btn btn-secondary" type="button" id="adminRefresh">↻ Обновить</button>
+<button class="btn btn-secondary" type="button" id="adminDiscard">↶ Отменить</button>
+<button class="btn btn-primary" type="button" id="adminApply">✓ Применить всё</button>
+<button class="btn btn-secondary" type="button" data-admin-panel-close>Закрыть</button>
+</div>
+    </div>
+    <div class="admin-shell">
+      <aside class="admin-side">
+        <button class="admin-tab active" data-admin-tab="dashboard">◈ Дашборд</button>
+        <button class="admin-tab" data-admin-tab="users">♙ Игроки</button>
+        <button class="admin-tab" data-admin-tab="economy">₽ Экономика</button>
+        <button class="admin-tab" data-admin-tab="content">✦ Контент</button>
+        <button class="admin-tab" data-admin-tab="tools">⚙ Инструменты</button>
+      </aside>
+      <main class="admin-content" id="adminContent"></main>
+    </div>
+  </div>
+</div>
+
+<div class="toast-stack" id="toastStack"></div>
+
+<script>
+(() => {
+  'use strict';
+
+  const ACCOUNTS_KEY = 'astro_v2_pro_max_accounts_v3';
+  const SESSION_KEY = 'astro_v2_pro_max_local';
+
+  const $ = (id) => document.getElementById(id);
+
+  function readAccounts() {
+    try {
+      const raw = localStorage.getItem(ACCOUNTS_KEY);
+      const data = raw ? JSON.parse(raw) : {};
+      return data && typeof data === 'object' ? data : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function writeAccounts(accounts) {
+    try {
+      localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(accounts));
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function showStatus(message, type) {
+    const el = $('authStatus');
+    if (!el) return;
+    el.textContent = message || '';
+    el.dataset.type = type || '';
+  }
+
+  function normalizeEmail(value) {
+    return String(value || '').trim().toLowerCase();
+  }
+
+  function validEmail(email) {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  }
+
+  function validUsername(name) {
+    return /^[a-zA-Zа-яА-ЯёЁ0-9_ -]{3,20}$/.test(name);
+  }
+
+  async function hashPassword(password) {
+    const bytes = new TextEncoder().encode(String(password));
+    if (window.crypto && window.crypto.subtle) {
+      const digest = await window.crypto.subtle.digest('SHA-256', bytes);
+      return Array.from(new Uint8Array(digest), b => b.toString(16).padStart(2, '0')).join('');
+    }
+    // Fallback for very old/local browser contexts.
+    let h = 2166136261;
+    for (const b of bytes) {
+      h ^= b;
+      h = Math.imul(h, 16777619);
+    }
+    return 'fallback-' + (h >>> 0).toString(16);
+  }
+
+  function setSession(user) {
+    let current = {};
+    try {
+      current = JSON.parse(localStorage.getItem(SESSION_KEY) || '{}') || {};
+    } catch (_) {}
+    const safeUser = {...user};
+    delete safeUser.passwordHash;
+    current.user = safeUser;
+    current.route = 'home';
+    localStorage.setItem(SESSION_KEY, JSON.stringify(current));
+  }
+
+  function open(mode) {
+    const modal = $('authModal');
+    if (!modal) return;
+    modal.classList.remove('hidden');
+    $('authForm').reset();
+    $('authUsername').value = '';
+    $('authEmail').value = '';
+    $('authPassword').value = '';
+    $('authConfirm').value = '';
+    showStatus('', '');
+    sync(mode || 'login');
+    setTimeout(() => {
+      const target = mode === 'register' ? $('authUsername') : $('authEmail');
+      target && target.focus();
+    }, 50);
+  }
+
+  function close() {
+    const modal = $('authModal');
+    if (modal) modal.classList.add('hidden');
+    showStatus('', '');
+  }
+
+  function sync(mode) {
+    const register = mode === 'register';
+    $('authModal').dataset.mode = register ? 'register' : 'login';
+    $('authTitle').textContent = register ? 'Создать ASTRO ID' : 'Войти в ASTRO';
+    $('authSubmitText').textContent = register ? 'Создать аккаунт' : 'Войти';
+    $('usernameField').style.display = register ? 'grid' : 'none';
+    $('confirmPasswordField').style.display = register ? 'grid' : 'none';
+    $('authLoginTab').classList.toggle('active', !register);
+    $('authRegisterTab').classList.toggle('active', register);
+    $('authPassword').autocomplete = register ? 'new-password' : 'current-password';
+  }
+
+  async function submit(event) {
+    event.preventDefault();
+
+    const register = $('authModal').dataset.mode === 'register';
+    const username = $('authUsername').value.trim();
+    const email = normalizeEmail($('authEmail').value);
+    const password = $('authPassword').value;
+    const confirm = $('authConfirm').value;
+
+    showStatus('', '');
+
+    if (!validEmail(email)) {
+      showStatus('Введите корректный email.', 'error');
+      return false;
+    }
+
+    if (password.length < 8) {
+      showStatus('Пароль должен содержать минимум 8 символов.', 'error');
+      return false;
+    }
+
+    const accounts = readAccounts();
+
+    if (register) {
+      if (!validUsername(username)) {
+        showStatus('Никнейм: от 3 до 20 символов. Разрешены буквы, цифры, пробел, _ и -.', 'error');
+        return false;
+      }
+
+      if (accounts[email]) {
+        showStatus('Этот email уже зарегистрирован. Переключись на «Вход».', 'error');
+        return false;
+      }
+
+      const taken = Object.values(accounts).some(
+        a => String(a.username || '').toLowerCase() === username.toLowerCase()
+      );
+
+      if (taken) {
+        showStatus('Такой никнейм уже занят.', 'error');
+        return false;
+      }
+
+      if (password !== confirm) {
+        showStatus('Пароли не совпадают.', 'error');
+        return false;
+      }
+
+      const passwordHash = await hashPassword(password);
+      const now = new Date().toISOString();
+      const id = (crypto && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : 'astro_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+
+      const user = {
+        id,
+        username,
+        email,
+        passwordHash,
+        balance: 1000,
+        xp: 0,
+        elo: 1000,
+        wins: 0,
+        history: [],
+        createdAt: now,
+        lastLoginAt: now
+      };
+
+      accounts[email] = user;
+
+      if (!writeAccounts(accounts)) {
+        showStatus('Не удалось сохранить аккаунт. Разреши сохранение данных для сайта в браузере.', 'error');
+        return false;
+      }
+
+      setSession(user);
+      showStatus('✓ ASTRO ID создан. Входим...', 'success');
+
+      setTimeout(() => {
+        close();
+        location.reload();
+      }, 450);
+
+      return false;
+    }
+
+    const account = accounts[email];
+
+    if (!account) {
+      showStatus('Аккаунт не найден. Сначала зарегистрируйся.', 'error');
+      return false;
+    }
+
+    const passwordHash = await hashPassword(password);
+
+    if (passwordHash !== account.passwordHash) {
+      showStatus('Неверный email или пароль.', 'error');
+      return false;
+    }
+
+    account.lastLoginAt = new Date().toISOString();
+    accounts[email] = account;
+    writeAccounts(accounts);
+    setSession(account);
+
+    showStatus('✓ Вход выполнен. Открываем ASTRO...', 'success');
+
+    setTimeout(() => {
+      close();
+      location.reload();
+    }, 450);
+
+    return false;
+  }
+
+  window.ASTRO_AUTH = {open, close, submit};
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') close();
+  });
+})();
+</script>
+
+
+<script>
+(() => {
+'use strict';
+
+const ADMIN_PASSWORD = 'пароль-astro1337';
+const ADMIN_SESSION = 'astro_v2_admin_session';
+const ACCOUNTS_KEY_ADMIN = 'astro_v2_pro_max_accounts_v3';
+const APP_KEY_ADMIN = 'astro_v2_pro_max_local';
+const CONTENT_KEY_ADMIN = 'astro_v2_pro_max_content_v1';
+const $a = (id) => document.getElementById(id);
+
+let adminDraftAccounts = null;
+let adminDraftApp = null;
+let adminDirty = false;
+
+function adminClone(x){ try { return JSON.parse(JSON.stringify(x)); } catch { return x; } }
+function adminReadAccounts(){
+  try { const x=JSON.parse(localStorage.getItem(ACCOUNTS_KEY_ADMIN)||'{}'); return x&&typeof x==='object'?x:{}; } catch { return {}; }
+}
+function adminReadApp(){
+  try {
+    const canonical=JSON.parse(localStorage.getItem(CONTENT_KEY_ADMIN)||'null');
+    if(canonical&&typeof canonical==='object') return canonical;
+    const x=JSON.parse(localStorage.getItem(APP_KEY_ADMIN)||'{}');
+    return x&&typeof x==='object'?x:{};
+  } catch { return {}; }
+}
+function adminBeginDraft(){
+  adminDraftAccounts=adminClone(adminReadAccounts());
+  adminDraftApp=adminClone(adminReadApp());
+  adminDirty=false;
+  adminUpdateApplyUI();
+}
+function adminAccounts(){
+  if(!adminDraftAccounts) adminBeginDraft();
+  return adminDraftAccounts;
+}
+function saveAdminAccounts(x){
+  adminDraftAccounts=x;
+  adminDirty=true;
+  adminUpdateApplyUI();
+}
+function adminApp(){
+  if(!adminDraftApp) adminBeginDraft();
+  return adminDraftApp;
+}
+function saveAdminApp(x){
+  adminDraftApp=x;
+  adminDirty=true;
+  adminUpdateApplyUI();
+}
+function adminUpdateApplyUI(){
+  const b=$a('adminApply');
+  if(b){b.dataset.dirty=adminDirty?'true':'false';b.textContent=adminDirty?'✓ Применить всё':'✓ Всё применено';}
+}
+function adminApplyAll(){
+  if(!adminDraftAccounts) adminBeginDraft();
+  try{
+    localStorage.setItem(ACCOUNTS_KEY_ADMIN,JSON.stringify(adminDraftAccounts||{}));
+    localStorage.setItem(CONTENT_KEY_ADMIN,JSON.stringify(adminDraftApp||{}));
+    localStorage.setItem(APP_KEY_ADMIN,JSON.stringify({
+      user: (()=>{try{const x=JSON.parse(localStorage.getItem(APP_KEY_ADMIN)||'{}');return x.user||null}catch{return null}})(),
+      route: (()=>{try{const x=JSON.parse(localStorage.getItem(APP_KEY_ADMIN)||'{}');return x.route||'home'}catch{return 'home'}})()
+    }));
+    try{
+      const session=JSON.parse(localStorage.getItem(APP_KEY_ADMIN)||'{}');
+      if(session.user && session.user.email && adminDraftAccounts && adminDraftAccounts[session.user.email]){
+        const fresh={...adminDraftAccounts[session.user.email]};
+        delete fresh.passwordHash;
+        session.user=fresh;
+        localStorage.setItem(APP_KEY_ADMIN,JSON.stringify(session));
+      }
+    }catch{}
+    adminDirty=false;
+    try{
+      window.dispatchEvent(new StorageEvent('storage',{key:CONTENT_KEY_ADMIN,newValue:JSON.stringify(adminDraftApp||{})}));
+    }catch{}
+    adminUpdateApplyUI();
+    adminToast('✓ Все изменения применены','success');
+    setTimeout(()=>location.reload(),350);
+  }catch(err){
+    adminToast('Не удалось применить изменения: '+err.message,'danger');
+  }
+}
+function adminDiscardAll(){
+  adminBeginDraft();
+  renderAdmin(document.querySelector('.admin-content')?.dataset.tab||'dashboard');
+  adminToast('Изменения отменены');
+}
+function adminToast(msg,type=''){ const el=document.createElement('div'); el.className='toast '+type; el.textContent=msg; document.getElementById('toastStack')?.append(el); setTimeout(()=>el.remove(),3200); }
+function adminEsc(v){return String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));}
+function adminMoney(v){return new Intl.NumberFormat('ru-RU').format(Number(v)||0)+' ₽';}
+function adminOpenLogin(){ $a('adminLoginModal').classList.remove('hidden'); $a('adminLoginError').textContent=''; $a('adminPassword').value=''; setTimeout(()=> $a('adminPassword').focus(),50); }
+function adminCloseLogin(){ $a('adminLoginModal').classList.add('hidden'); }
+function adminOpenPanel(){ adminCloseLogin(); adminBeginDraft(); $a('adminPanelModal').classList.remove('hidden'); renderAdmin('dashboard'); }
+function adminClosePanel(){ $a('adminPanelModal').classList.add('hidden'); adminDraftAccounts=null; adminDraftApp=null; adminDirty=false; localStorage.removeItem(ADMIN_SESSION); }
+function currentAdmin(){return sessionStorage.getItem(ADMIN_SESSION)==='1';}
+
+function adminDashboard(){
+  const a=adminAccounts(), vals=Object.values(a), app=adminApp();
+  const totalBalance=vals.reduce((n,u)=>n+(Number(u.balance)||0),0);
+  const banned=vals.filter(u=>u.banned).length;
+  const products=Array.isArray(app.products)?app.products.length:0;
+  const quests=Array.isArray(app.quests)?app.quests.length:0;
+  return `<div class="admin-grid">
+    <div class="admin-stat"><span>Игроков</span><b>${vals.length}</b></div>
+    <div class="admin-stat"><span>Баланс системы</span><b>${adminMoney(totalBalance)}</b></div>
+    <div class="admin-stat"><span>Заблокировано</span><b>${banned}</b></div>
+    <div class="admin-stat"><span>Контент</span><b>${products+quests}</b></div>
+  </div>
+  <div class="admin-card"><h3>Быстрые действия</h3><div class="admin-actions">
+    <button class="btn btn-primary" data-admin-tab="users">Управление игроками</button>
+    <button class="btn btn-secondary" data-admin-tab="economy">Экономика</button>
+    <button class="btn btn-secondary" data-admin-tab="content">Редактор контента</button>
+    <button class="btn btn-secondary" data-admin-tab="tools">Инструменты</button>
+  </div></div>
+  <div class="admin-card"><h3>Состояние системы</h3><div class="admin-code">LOCAL AUTH · ACCOUNTS: ${adminEsc(ACCOUNTS_KEY_ADMIN)} · APP DATA: ${adminEsc(APP_KEY_ADMIN)}</div></div>`;
+}
+
+function adminUsers(){
+  const a=adminAccounts(), rows=Object.entries(a).map(([email,u])=>`<tr>
+    <td><b>${adminEsc(u.username||'Без имени')}</b><br><span class="muted">${adminEsc(email)}</span></td>
+    <td>${adminMoney(u.balance)}</td><td>${Number(u.xp)||0}</td><td>${Number(u.elo)||1000}</td>
+    <td><span class="admin-badge ${u.banned?'banned':''}">${u.banned?'BANNED':'ACTIVE'}</span></td>
+    <td><div class="admin-actions">
+      <button class="btn btn-secondary" data-user-action="balance" data-email="${adminEsc(email)}">Баланс</button>
+      <button class="btn btn-secondary" data-user-action="xp" data-email="${adminEsc(email)}">XP</button>
+      <button class="btn btn-secondary" data-user-action="elo" data-email="${adminEsc(email)}">ELO</button>
+      <button class="btn btn-secondary" data-user-action="ban" data-email="${adminEsc(email)}">${u.banned?'Разбанить':'Забанить'}</button>
+      <button class="btn btn-secondary" data-user-action="reset" data-email="${adminEsc(email)}">Сброс</button>
+      <button class="btn btn-secondary" data-user-action="delete" data-email="${adminEsc(email)}">Удалить</button>
+    </div></td>
+  </tr>`).join('');
+  return `<div class="admin-card"><h3>Игроки (${Object.keys(a).length})</h3><div style="overflow:auto"><table class="admin-table"><thead><tr><th>Игрок</th><th>Баланс</th><th>XP</th><th>ELO</th><th>Статус</th><th>Действия</th></tr></thead><tbody>${rows||'<tr><td colspan="6">Нет зарегистрированных игроков.</td></tr>'}</tbody></table></div></div>`;
+}
+
+function findUser(email){const a=adminAccounts();return {a,u:a[email]};}
+function adminUserAction(action,email){
+  const {a,u}=findUser(email); if(!u){adminToast('Игрок не найден','danger');return;}
+  if(action==='balance'||action==='xp'||action==='elo'){
+    const raw=prompt(
+      action==='balance'?'Новый баланс (₽):':
+      action==='xp'?'Новое количество XP:':
+      'Новое значение ELO:',
+      action==='balance'?String(Number(u.balance)||0):
+      action==='xp'?String(Number(u.xp)||0):
+      String(Number(u.elo)||1000)
+    );
+    if(raw===null)return;
+    const n=Number(raw);
+    if(!Number.isFinite(n)){adminToast('Введите число','danger');return;}
+    if(action==='balance')u.balance=Math.max(0,n);
+    if(action==='xp')u.xp=Math.max(0,n);
+    if(action==='elo')u.elo=Math.max(0,n);
+    u.history=Array.isArray(u.history)?u.history:[];
+    u.history.unshift({title:'Админ · '+action.toUpperCase(),amount:action==='balance'?n:0,createdAt:new Date().toISOString()});
+    u.history=u.history.slice(0,30); a[email]=u; saveAdminAccounts(a); adminToast('Изменения сохранены'); renderAdmin('users'); return;
+  }
+  if(action==='ban'){u.banned=!u.banned;a[email]=u;saveAdminAccounts(a);adminToast(u.banned?'Игрок заблокирован':'Игрок разблокирован');renderAdmin('users');return;}
+  if(action==='reset'){
+    if(!confirm('Сбросить баланс, XP, ELO, победы и историю этого игрока?'))return;
+    u.balance=1000;u.xp=0;u.elo=1000;u.wins=0;u.history=[];u.banned=false;a[email]=u;saveAdminAccounts(a);adminToast('Профиль сброшен');renderAdmin('users');return;
+  }
+  if(action==='delete'){
+    if(!confirm('Удалить аккаунт '+email+' без возможности восстановления?'))return;
+    delete a[email];saveAdminAccounts(a);adminToast('Аккаунт удалён');renderAdmin('users');return;
+  }
+}
+
+function adminEconomy(){
+  const app=adminApp(), products=Array.isArray(app.products)?app.products:[];
+  return `<div class="admin-card"><h3>Создать товар</h3><form id="adminProductForm" class="admin-form-grid">
+    <label class="field"><span>ID</span><input name="id" placeholder="vip-pack" required></label>
+    <label class="field"><span>Название</span><input name="name" placeholder="VIP Pack" required></label>
+    <label class="field"><span>Цена</span><input name="price" type="number" min="0" value="499" required></label>
+    <label class="field"><span>Иконка</span><input name="icon" value="✦"></label>
+    <label class="field admin-wide"><span>Описание</span><input name="description" placeholder="Описание товара"></label>
+    <button class="btn btn-primary admin-wide" type="submit">Добавить товар</button></form></div>
+  <div class="admin-card"><h3>Товары</h3><div style="overflow:auto"><table class="admin-table"><thead><tr><th>ID</th><th>Название</th><th>Цена</th><th>Действие</th></tr></thead><tbody>
+  ${products.map(p=>`<tr><td>${adminEsc(p.id)}</td><td>${adminEsc(p.name)}</td><td>${adminMoney(p.price)}</td><td><button class="btn btn-secondary" data-product-delete="${adminEsc(p.id)}">Удалить</button></td></tr>`).join('')||'<tr><td colspan="4">Нет товаров.</td></tr>'}</tbody></table></div></div>`;
+}
+
+function adminContent(){
+  const app=adminApp(), quests=Array.isArray(app.quests)?app.quests:[];
+  return `<div class="admin-card"><h3>Создать квест</h3><form id="adminQuestForm" class="admin-form-grid">
+    <label class="field"><span>ID</span><input name="id" placeholder="weekly-1" required></label>
+    <label class="field"><span>Название</span><input name="title" placeholder="Новая миссия" required></label>
+    <label class="field"><span>Награда ₽</span><input name="reward" type="number" min="0" value="100" required></label>
+    <label class="field"><span>XP</span><input name="xp" type="number" min="0" value="50" required></label>
+    <label class="field admin-wide"><span>Описание</span><input name="description" placeholder="Что должен сделать игрок"></label>
+    <button class="btn btn-primary admin-wide" type="submit">Добавить квест</button></form></div>
+  <div class="admin-card"><h3>Квесты</h3><div style="overflow:auto"><table class="admin-table"><thead><tr><th>ID</th><th>Название</th><th>Награда</th><th>XP</th><th>Действие</th></tr></thead><tbody>
+  ${quests.map(q=>`<tr><td>${adminEsc(q.id)}</td><td>${adminEsc(q.title)}</td><td>${adminMoney(q.reward)}</td><td>${q.xp}</td><td><button class="btn btn-secondary" data-quest-delete="${adminEsc(q.id)}">Удалить</button></td></tr>`).join('')||'<tr><td colspan="5">Нет квестов.</td></tr>'}</tbody></table></div></div>
+  <div class="admin-card"><h3>Сброс ежедневных квестов</h3><button class="btn btn-secondary" id="adminResetQuests">Снять статус «получено» у всех квестов</button></div>`;
+}
+
+function adminTools(){
+  return `<div class="admin-card"><h3>Резервная копия</h3><p class="muted">Экспортирует аккаунты и игровые данные в JSON-файл.</p><div class="admin-actions"><button class="btn btn-primary" id="adminExport">Экспорт JSON</button><label class="btn btn-secondary" style="display:inline-flex;align-items:center">Импорт JSON<input id="adminImport" type="file" accept="application/json" hidden></label></div></div>
+  <div class="admin-card"><h3>Очистка</h3><p class="muted">Удаление всех локальных аккаунтов необратимо для этого браузера.</p><button class="btn btn-secondary" id="adminClearAccounts">Удалить все аккаунты</button></div>
+  <div class="admin-card"><h3>Безопасность</h3><p class="muted">Эта версия автономная: админ-пароль находится в клиентском HTML. Это подходит для локальной панели, но не является защитой от человека с доступом к исходному коду.</p></div>`;
+}
+
+function renderAdmin(tab='dashboard'){
+  if(!currentAdmin()){adminOpenLogin();return;}
+  document.querySelectorAll('.admin-tab').forEach(b=>b.classList.toggle('active',b.dataset.adminTab===tab));
+  const c=$a('adminContent');
+  c.innerHTML=(adminDirty?'<div class="admin-dirty">Есть неподтверждённые изменения. Они пока находятся в черновике. Нажми «Применить всё», чтобы записать изменения и обновить сайт.</div>':'')+(tab==='dashboard'?adminDashboard():tab==='users'?adminUsers():tab==='economy'?adminEconomy():tab==='content'?adminContent():adminTools());
+  c.dataset.tab=tab;
+  adminUpdateApplyUI();
+}
+
+document.addEventListener('click',e=>{
+  if(e.target.closest('[data-open-admin]')){e.preventDefault();adminOpenLogin();return;}
+  if(e.target.closest('[data-admin-close]')){adminCloseLogin();return;}
+  if(e.target.closest('[data-admin-panel-close]')){if(adminDirty&&!confirm('Есть неприменённые изменения. Закрыть и отменить их?'))return;adminClosePanel();return;}
+  const tab=e.target.closest('[data-admin-tab]'); if(tab){renderAdmin(tab.dataset.adminTab);return;}
+  const ua=e.target.closest('[data-user-action]'); if(ua){adminUserAction(ua.dataset.userAction,ua.dataset.email);return;}
+  const pd=e.target.closest('[data-product-delete]'); if(pd){const app=adminApp();app.products=(app.products||[]).filter(p=>p.id!==pd.dataset.productDelete);saveAdminApp(app);adminToast('Товар удалён');renderAdmin('economy');return;}
+  const qd=e.target.closest('[data-quest-delete]'); if(qd){const app=adminApp();app.quests=(app.quests||[]).filter(q=>q.id!==qd.dataset.questDelete);saveAdminApp(app);adminToast('Квест удалён');renderAdmin('content');return;}
+  if(e.target.id==='adminRefresh')renderAdmin(document.querySelector('.admin-content')?.dataset.tab||'dashboard');
+  if(e.target.id==='adminApply'){adminApplyAll();return;}
+  if(e.target.id==='adminDiscard'){adminDiscardAll();return;}
+  if(e.target.id==='adminResetQuests'){const app=adminApp();(app.quests||[]).forEach(q=>q.claimed=false);saveAdminApp(app);adminToast('Квесты сброшены');renderAdmin('content');}
+  if(e.target.id==='adminExport'){
+    const payload={version:4,exportedAt:new Date().toISOString(),draft:true,accounts:adminAccounts(),app:adminApp()};
+    const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='astro-admin-backup.json';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500);adminToast('Резервная копия создана');}
+  if(e.target.id==='adminClearAccounts'){if(confirm('Удалить ВСЕ аккаунты?')){saveAdminAccounts({});adminToast('Все аккаунты помечены на удаление — нажми «Применить всё»');renderAdmin('users');}}
+});
+
+document.addEventListener('submit',e=>{
+  if(e.target.id==='adminLoginForm'){
+    e.preventDefault();
+    const pass=$a('adminPassword').value;
+    if(pass===ADMIN_PASSWORD){sessionStorage.setItem(ADMIN_SESSION,'1');adminOpenPanel();}
+    else $a('adminLoginError').textContent='Неверный пароль.';
+  }
+  if(e.target.id==='adminProductForm'){
+    e.preventDefault();const f=new FormData(e.target),app=adminApp();app.products=Array.isArray(app.products)?app.products:[];const id=String(f.get('id')).trim();
+    if(app.products.some(p=>p.id===id)){adminToast('ID товара уже существует','danger');return;}
+    app.products.push({id,name:String(f.get('name')).trim(),price:Number(f.get('price'))||0,icon:String(f.get('icon')||'✦'),description:String(f.get('description')||'')});saveAdminApp(app);adminToast('✓ Товар добавлен в черновик. Нажми «Применить всё».','success');renderAdmin('economy');
+  }
+  if(e.target.id==='adminQuestForm'){
+    e.preventDefault();const f=new FormData(e.target),app=adminApp();app.quests=Array.isArray(app.quests)?app.quests:[];const id=String(f.get('id')).trim();
+    if(app.quests.some(q=>q.id===id)){adminToast('ID квеста уже существует','danger');return;}
+    app.quests.push({id,title:String(f.get('title')).trim(),reward:Number(f.get('reward'))||0,xp:Number(f.get('xp'))||0,description:String(f.get('description')||''),claimed:false});saveAdminApp(app);adminToast('✓ Квест добавлен в черновик. Нажми «Применить всё».','success');renderAdmin('content');
+  }
+});
+
+document.addEventListener('change',e=>{
+  if(e.target.id==='adminImport'&&e.target.files[0]){
+    const reader=new FileReader();reader.onload=()=>{try{const x=JSON.parse(reader.result);if(x.accounts)saveAdminAccounts(x.accounts);if(x.app)saveAdminApp(x.app);adminToast('Импорт завершён');renderAdmin('dashboard');}catch{adminToast('Некорректный JSON','danger')}};reader.readAsText(e.target.files[0]);
+  }
+});
+})();
+</script>
+
+<script>
+(() => {
+'use strict';
+const KEY='astro_v2_pro_max_local';
+const seed={user:null,products:[
+{id:'starter',name:'Starter Pack',price:299,icon:'✦',description:'Стартовый набор ASTRO для нового сезона.'},
+{id:'elite',name:'Elite Pack',price:799,icon:'◈',description:'Больше бонусов, больше статуса, больше ASTRO.'},
+{id:'legend',name:'Legend Pack',price:1499,icon:'♛',description:'Премиальный комплект для ветеранов арены.'},
+{id:'boost',name:'XP Boost',price:199,icon:'⚡',description:'Ускоритель прогресса на один игровой цикл.'}],
+quests:[
+{id:'daily-login',title:'Войти в систему',reward:50,xp:25,description:'Открой профиль и забери ежедневную награду.'},
+{id:'daily-explore',title:'Исследователь',reward:100,xp:50,description:'Посети разделы ASTRO и изучи новый сезон.'},
+{id:'daily-elite',title:'Elite Protocol',reward:250,xp:100,description:'Выполни особое задание сезона.'}],
+leaderboard:[
+['NovaPrime',2410,'LEGEND',182],['AstroFox',2180,'MASTER',154],['VoidRunner',2015,'MASTER',141],['CyberRay',1870,'DIAMOND',128],['LunaX',1760,'DIAMOND',116],['NeonWolf',1635,'DIAMOND',101],['PixelCore',1490,'PLATINUM',93],['OrbitOne',1375,'PLATINUM',84],['StarKid',1260,'GOLD',71],['Quantum',1180,'SILVER',64]]};
+let saved={...seed};
+try{
+  const x=JSON.parse(localStorage.getItem(KEY)||'null');
+  if(x){saved={...seed,...x};}
+}catch{}
+
+function syncLoggedInAccount(savedState){
+  try{
+    if(!savedState || !savedState.user || !savedState.user.email) return savedState;
+    const accounts=JSON.parse(localStorage.getItem('astro_v2_pro_max_accounts_v3')||'{}');
+    const fresh=accounts[savedState.user.email];
+    if(!fresh) return savedState;
+    const safeUser={...fresh};
+    delete safeUser.passwordHash;
+    return {...savedState,user:safeUser};
+  }catch{return savedState;}
+}
+
+function officialAccounts(){try{const x=JSON.parse(localStorage.getItem('astro_v2_pro_max_accounts_v3')||'{}');return x&&typeof x==='object'?x:{}}catch{return {}}}
+function officialApp(){
+ try{
+  const canonical=JSON.parse(localStorage.getItem('astro_v2_pro_max_content_v1')||'null');
+  if(canonical&&typeof canonical==='object')return canonical;
+  const x=JSON.parse(localStorage.getItem('astro_v2_pro_max_local')||'{}');
+  return x&&typeof x==='object'?x:{};
+ }catch{return {}}
+}
+function cleanUser(u){if(!u||typeof u!=='object'||!u.email)return null;return {...u,username:String(u.username||'Player'),balance:Number(u.balance)||0,xp:Number(u.xp)||0,elo:Number(u.elo)||1000,wins:Number(u.wins)||0,history:Array.isArray(u.history)?u.history:[],claimedQuests:u.claimedQuests&&typeof u.claimedQuests==='object'?u.claimedQuests:{}}}
+function syncOfficialContent(){const a=officialAccounts(),ad=officialApp();if(state.user&&state.user.email&&a[state.user.email])state.user=cleanUser(a[state.user.email]);if(Array.isArray(ad.products))state.products=ad.products;if(Array.isArray(ad.quests))state.quests=ad.quests;state.leaderboard=Object.values(a).map(cleanUser).filter(Boolean).sort((x,y)=>y.elo-x.elo||y.xp-x.xp||y.wins-x.wins).map(u=>[u.username,u.elo,'PLAYER',u.wins])}
+saved=syncLoggedInAccount(saved);saved.user=cleanUser(saved.user);
+const state={route:'home',authMode:'login',...saved};
+const $=(s,r=document)=>r.querySelector(s), $$=(s,r=document)=>[...r.querySelectorAll(s)], app=$('#app');
+const esc=v=>String(v??'').replace(/[&<>'"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+const money=v=>`${new Intl.NumberFormat('ru-RU').format(Number(v)||0)} ₽`;
+function persist(){
+ try{
+  if(state.user&&state.user.email){
+   const a=officialAccounts(),old=a[state.user.email]||{};
+   a[state.user.email]={...old,...state.user,passwordHash:old.passwordHash};
+   localStorage.setItem('astro_v2_pro_max_accounts_v3',JSON.stringify(a));
+  }
+  const ad=officialApp();if(Array.isArray(state.products))ad.products=state.products;if(Array.isArray(state.quests))ad.quests=state.quests;
+  localStorage.setItem('astro_v2_pro_max_content_v1',JSON.stringify(ad));
+  localStorage.setItem(KEY,JSON.stringify({user:state.user,route:state.route}));
+  syncOfficialContent();
+ }catch(e){console.error(e)}
+}
+function toast(message,type=''){const el=document.createElement('div');el.className=`toast ${type}`;el.textContent=message;$('#toastStack').append(el);setTimeout(()=>el.remove(),3600)}
+function updateAccountMini(){const el=$('#accountMini');if(!state.user){el.innerHTML='<button class="btn btn-secondary" data-open-auth>Войти</button>';return}el.innerHTML=`<button class="account-pill" data-route="cabinet"><span class="mini-avatar">${esc(state.user.username[0].toUpperCase())}</span><span><b>${esc(state.user.username)}</b><small class="balance">${money(state.user.balance)}</small></span></button>`}
+function setActiveNav(){$$('.nav-item').forEach(b=>b.classList.toggle('active',b.dataset.route===state.route))}
+function shellStats(){return `<div class="hero-side"><article class="stat-card"><span class="stat-label">Режим</span><strong class="stat-value">ONLINE</strong><span class="stat-note">Общий сервер ASTRO</span></article><article class="stat-card"><span class="stat-label">Авторизация</span><strong class="stat-value">ASTRO ID</strong><span class="stat-note">Общий онлайн-профиль</span></article><article class="stat-card"><span class="stat-label">Система</span><strong class="stat-value">LIVE</strong><span class="stat-note">Квесты · магазин · ELO · XP</span></article></div>`}
+function renderHome(){app.innerHTML=`<section class="hero"><div class="hero-main"><div class="hero-content"><div class="eyebrow">ASTRO NETWORK · NEXT GENERATION</div><h1>Играй.<br><span class="gradient">Прокачивай.</span><br>Доминируй.</h1><p class="lead">ASTRO SITE V2 PRO MAX — онлайн игровой портал. Живой интерфейс, магазин, квесты, рейтинг и ASTRO ID. Никакого Firebase и никакой установки Node.js.</p><div class="actions"><button class="btn btn-primary" data-route="shop">Открыть магазин <b>→</b></button><button class="btn btn-secondary" data-route="top">Смотреть рейтинг</button><button class="btn btn-secondary" data-open-auth>${state.user?'Открыть ASTRO ID':'Создать ASTRO ID'}</button></div><div class="ticker"><span>✦ NO FIREBASE</span><span>⚡ LIVE QUESTS</span><span>♛ ELO RANKING</span><span>◉ NO NODE.JS</span></div></div></div>${shellStats()}</section><section class="section"><div class="section-head"><div><div class="eyebrow">CORE SYSTEM</div><h2>Новая система. Новый ритм.</h2></div><span class="muted">Автономная версия</span></div><div class="feature-grid"><article class="glass feature"><div class="icon">◈</div><h3>ASTRO ID</h3><p class="muted">Создай локальный профиль и развивай его прямо в браузере.</p></article><article class="glass feature"><div class="icon">⚡</div><h3>Quest Engine</h3><p class="muted">Ежедневные задания, XP и награды с сохранением прогресса.</p></article><article class="glass feature"><div class="icon">♛</div><h3>Competitive Core</h3><p class="muted">ELO, победы, ранги и leaderboard для твоего сезона.</p></article></div></section>`}
+function renderTop(){
+ syncOfficialContent();
+ const rows=state.leaderboard.map((p,i)=>`<div class="table-row" style="animation-delay:${Math.min(i,20)*45}ms"><div class="place ${i<3?'podium':''}">${i+1}</div><div class="player-cell"><span class="table-avatar">${esc(p[0]?.[0]||'?')}</span><b>${esc(p[0])}</b></div><div class="elo-live">${Number(p[1]).toLocaleString('ru-RU')}</div><div><span class="rank-badge">${esc(p[2])}</span></div><div>${Number(p[3]||0).toLocaleString('ru-RU')}</div></div>`).join('');
+ app.innerHTML=`<section class="section"><div class="section-head"><div><div class="eyebrow">LIVE LEADERBOARD</div><h2>Таблица лидеров</h2></div><span class="muted">ELO +1 каждую секунду</span></div><div class="panel"><div class="table-head"><div>#</div><div>Игрок</div><div>ELO</div><div>Ранг</div><div>Победы</div></div>${rows||'<div class="empty">Нет игроков.</div>'}</div></section>`;
+}
+
+const ASTRO_RANKS=[
+ {id:'bronze',name:'BRONZE',title:'Бронзовый',price:5000,color:'#cd7f32',icon:'◆'},
+ {id:'silver',name:'SILVER',title:'Серебряный',price:15000,color:'#b9c3d0',icon:'◇'},
+ {id:'gold',name:'GOLD',title:'Золотой',price:35000,color:'#ffd45a',icon:'✦'},
+ {id:'diamond',name:'DIAMOND',title:'Алмазный',price:75000,color:'#6ee7ff',icon:'✧'},
+ {id:'master',name:'MASTER',title:'Мастер',price:150000,color:'#c084fc',icon:'✹'},
+ {id:'astro',name:'ASTRO',title:'ASTRO ELITE',price:300000,color:'#ff6bd6',icon:'★'}
+];
+function ownedRanks(){return Array.isArray(state.user?.ownedRanks)?state.user.ownedRanks:[]}
+function currentRank(){const ids=ownedRanks();return ASTRO_RANKS.filter(r=>ids.includes(r.id)).sort((a,b)=>b.price-a.price)[0]||null}
+function buyRank(id){
+ if(!state.user){openAuth('login');return}
+ const r=ASTRO_RANKS.find(x=>x.id===id);if(!r)return;
+ const owned=ownedRanks();
+ if(owned.includes(id)){toast('Этот ранг уже куплен','danger');return}
+ const balance=Number(state.user.balance)||0;
+ if(balance<r.price){toast(`Не хватает ${(r.price-balance).toLocaleString('ru-RU')} ₽`,'danger');return}
+ state.user.balance=balance-r.price;
+ state.user.ownedRanks=[...owned,id];
+ state.user.rank=r.name;
+ state.user.history=Array.isArray(state.user.history)?state.user.history:[];
+ state.user.history.unshift({title:`Покупка ранга · ${r.name}`,amount:-r.price,createdAt:new Date().toISOString()});
+ state.user.history=state.user.history.slice(0,30);
+ persist();
+ toast(`✦ Ранг ${r.name} куплен`);
+ renderRanks();updateAccountMini();
+}
+function renderRanks(){
+ const owned=ownedRanks(), current=currentRank();
+ app.innerHTML=`<section class="section">
+  <div class="section-head"><div><div class="eyebrow">RANK MARKET</div><h2>Ранги</h2><p class="muted">Покупай ранги за баланс и открывай новый статус профиля.</p></div>
+  <div class="glass" style="padding:18px 22px;text-align:right"><div class="eyebrow">ТЕКУЩИЙ БАЛАНС</div><b style="font-size:24px">${(Number(state.user?.balance)||0).toLocaleString('ru-RU')} ₽</b></div></div>
+  ${current?`<div class="glass" style="padding:18px 22px;margin-bottom:18px"><span class="eyebrow">ТЕКУЩИЙ РАНГ</span><h3 style="margin:7px 0;color:${current.color}">${current.icon} ${current.name}</h3><span class="muted">${current.title}</span></div>`:''}
+  <div class="rank-grid">${ASTRO_RANKS.map((r,i)=>{
+    const isOwned=owned.includes(r.id), can=(Number(state.user?.balance)||0)>=r.price;
+    return `<article class="glass rank-card" style="--rank-color:${r.color};animation-delay:${i*70}ms">
+      <div class="rank-symbol">${r.icon}</div><div class="eyebrow">ASTRO RANK</div><h3 style="color:${r.color}">${r.name}</h3>
+      <p class="muted">${r.title}</p><div class="quest-reward"><span>Стоимость</span><b>${r.price.toLocaleString('ru-RU')} ₽</b></div>
+      <button class="btn ${isOwned?'btn-secondary':'btn-primary'}" data-buy-rank="${r.id}" ${isOwned?'disabled':''}>${isOwned?'✓ Куплен':(can?'Купить ранг':'Недостаточно средств')}</button>
+    </article>`}).join('')}</div>
+ </section>`;
+}
+function renderShop(){renderRanks()}
+function logout(){state.user=null;persist();state.route='home';toast('Сессия завершена');render()}
+function saveProfile(e){e.preventDefault();const username=new FormData(e.currentTarget).get('username');if(!state.user||!username)return;state.user.username=username;persist();toast('Профиль обновлён');render()}
+const routes=[['home','Главная'],['top','Рейтинг'],['ranks','Магазин'],['quests','Квесты'],['cabinet','Профиль']];
+function openCommand(){const c=$('#command');c.classList.remove('hidden');const input=$('#commandInput');input.value='';renderCommand('');setTimeout(()=>input.focus(),30)}
+function closeCommand(){$('#command').classList.add('hidden')}
+function renderCommand(q){const box=$('#commandResults');const list=routes.filter(x=>x[1].toLowerCase().includes(q.toLowerCase())||x[0].includes(q.toLowerCase()));box.innerHTML=list.map((x,i)=>`<div class="command-item" data-route="${x[0]}"><span>↗ ${x[1]}</span><kbd>${i+1}</kbd></div>`).join('')||'<div class="empty">Ничего не найдено</div>'}
+function initParticles(){const canvas=$('#particles'),ctx=canvas.getContext('2d');let w=0,h=0,dots=[];function resize(){const dpr=Math.min(devicePixelRatio||1,2);w=innerWidth*dpr;h=innerHeight*dpr;canvas.width=w;canvas.height=h;canvas.style.width=innerWidth+'px';canvas.style.height=innerHeight+'px';dots=Array.from({length:Math.min(100,Math.floor(innerWidth/13))},()=>({x:Math.random()*w,y:Math.random()*h,r:(Math.random()*.9+.25)*dpr,vx:(Math.random()-.5)*.12*dpr,vy:(Math.random()-.5)*.12*dpr}))}function loop(){ctx.clearRect(0,0,w,h);for(const p of dots){p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>w)p.vx*=-1;if(p.y<0||p.y>h)p.vy*=-1;ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle='rgba(150,225,255,.42)';ctx.fill()}requestAnimationFrame(loop)}resize();addEventListener('resize',resize);loop()}
+function render(){
+ try{
+  syncOfficialContent();setActiveNav();updateAccountMini();window.scrollTo({top:0,behavior:'smooth'});
+  if(state.route==='home')renderHome();else if(state.route==='top')renderTop();else if(state.route==='ranks'||state.route==='ranks')renderRanks();else if(state.route==='quests')renderQuests();else renderCabinet();
+ }catch(err){
+  console.error('ASTRO render error:',err);
+  app.innerHTML='<section class="section"><div class="panel" style="padding:40px"><div class="eyebrow">ASTRO RECOVERY</div><h2>Интерфейс восстановлен</h2><p class="muted">Старые локальные данные не должны ломать ASTRO.</p><button class="btn btn-primary" onclick="location.reload()">Перезапустить</button></div></section>';
+ }
+}
+addEventListener('scroll',()=>$('#topbar').classList.toggle('scrolled',scrollY>10),{passive:true});
+document.addEventListener('click',e=>{const b=e.target.closest('[data-buy-rank]');if(b){e.preventDefault();buyRank(b.dataset.buyRank)}});
+document.addEventListener('click',e=>{const route=e.target.closest('[data-route]');if(route){e.preventDefault();state.route=route.dataset.route;$('#nav').classList.remove('open');render();closeCommand();return}if(e.target.closest('[data-open-auth]'))return openAuth();if(e.target.closest('[data-auth-mode]')){state.authMode=e.target.closest('[data-auth-mode]').dataset.authMode;syncAuthMode();return}if(e.target.closest('#closeAuth'))return closeAuth();if(e.target.closest('#commandBtn'))return openCommand();const buyBtn=e.target.closest('[data-buy]');if(buyBtn)return buy(buyBtn.dataset.buy);const claimBtn=e.target.closest('[data-claim]');if(claimBtn)return claim(claimBtn.dataset.claim);if(e.target.closest('[data-logout]'))return logout();if(e.target.closest('#mobileMenu'))return $('#nav').classList.toggle('open');if(e.target.classList.contains('modal-backdrop')||e.target.classList.contains('command-backdrop')){closeAuth();closeCommand()}});
+document.addEventListener('submit',e=>{if(e.target.id==='authForm')authSubmit(e);if(e.target.id==='profileForm')saveProfile(e)});document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeAuth();closeCommand()}if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openCommand()}});$('#commandInput').addEventListener('input',e=>renderCommand(e.target.value));
+syncOfficialContent();
+let astroLastTick=Date.now();
+setInterval(()=>{
+ try{
+  const now=Date.now(),sec=Math.floor((now-astroLastTick)/1000);if(sec<1)return;astroLastTick+=sec*1000;
+  const a=officialAccounts();Object.keys(a).forEach(email=>{a[email].elo=(Number(a[email].elo)||1000)+sec});
+  localStorage.setItem('astro_v2_pro_max_accounts_v3',JSON.stringify(a));syncOfficialContent();
+  if(state.route==='top')renderTop();else updateAccountMini();
+ }catch(e){console.error('ELO engine',e)}
+},1000);
+window.addEventListener('storage',()=>{syncOfficialContent();render()});
+setInterval(()=>{
+  try{
+    const beforeP=JSON.stringify(state.products), beforeQ=JSON.stringify(state.quests);
+    syncOfficialContent();
+    if(beforeP!==JSON.stringify(state.products)||beforeQ!==JSON.stringify(state.quests)){
+      if(state.route==='ranks')renderShop();
+      if(state.route==='quests')renderQuests();
+    }
+  }catch(e){}
+},1000);
+
+// ================= ONLINE ASTRO MODE =================
+// The desktop/browser client talks to the same server, so every player shares one account DB.
+const ONLINE_API = location.protocol === 'file:' ? 'http://localhost:3000' : '';
+let onlineToken = localStorage.getItem('astro_online_token') || '';
+let onlineSocket = null;
+async function onlineFetch(path, options={}){
+  const headers={'Content-Type':'application/json',...(options.headers||{})};
+  if(onlineToken) headers.Authorization='Bearer '+onlineToken;
+  const res=await fetch(ONLINE_API+path,{...options,headers});
+  let data={}; try{data=await res.json()}catch{}
+  if(!res.ok) throw new Error(data.error||'Ошибка сервера');
+  return data;
+}
+function onlineSetUser(u){
+  state.user=u?cleanUser(u):null;
+  localStorage.setItem(KEY,JSON.stringify({user:state.user,route:state.route}));
+  updateAccountMini();
+}
+async function onlineRefresh(){
+  if(!onlineToken){return;}
+  try{
+    const me=await onlineFetch('/api/me');
+    onlineSetUser(me.user);
+    const lb=await onlineFetch('/api/leaderboard');
+    state.leaderboard=lb.players.map(u=>[u.username,u.elo,'PLAYER',u.wins,u.ownedRanks]);
+    if(Array.isArray(lb.quests)) state.quests=lb.quests;
+    if(state.route==='top')renderTop();
+    else if(state.route==='quests')renderQuests();
+    else if(state.route==='cabinet')renderCabinet();
+    else updateAccountMini();
+  }catch(e){
+    if(/401|token|автор/i.test(e.message)){onlineToken='';localStorage.removeItem('astro_online_token');onlineSetUser(null);}
+  }
+}
+async function onlineAuthSubmit(event){
+  event.preventDefault();
+  const register=$('authModal').dataset.mode==='register';
+  const username=$('authUsername').value.trim();
+  const email=$('authEmail').value.trim().toLowerCase();
+  const password=$('authPassword').value;
+  const confirm=$('authConfirm').value;
+  const show=(m,t)=>{const el=$('authStatus')||$('authStatusText');if(el){el.textContent=m;el.className='auth-status '+(t||'')}};
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) return show('Введите корректный email.','error');
+  if(password.length<8) return show('Пароль должен содержать минимум 8 символов.','error');
+  if(register && password!==confirm) return show('Пароли не совпадают.','error');
+  if(register && !/^[a-zA-Zа-яА-ЯёЁ0-9_ -]{3,20}$/.test(username)) return show('Никнейм: 3–20 символов.','error');
+  try{
+    const data=await onlineFetch(register?'/api/register':'/api/login',{method:'POST',body:JSON.stringify(register?{username,email,password}:{email,password})});
+    onlineToken=data.token; localStorage.setItem('astro_online_token',onlineToken);
+    onlineSetUser(data.user); onlineCloseAuth(); state.route='home'; render();
+    await onlineRefresh();
+  }catch(e){show(e.message,'error');}
+  return false;
+}
+function onlineOpenAuth(mode='login'){const m=$('authModal');if(!m)return;m.classList.remove('hidden');m.dataset.mode=mode;$('authTitle').textContent=mode==='register'?'Создать ASTRO ID':'Войти в ASTRO';$('authSubmitText').textContent=mode==='register'?'Создать аккаунт':'Войти';$('usernameField').style.display=mode==='register'?'grid':'none';$('confirmPasswordField').style.display=mode==='register'?'grid':'none';$('authLoginTab').classList.toggle('active',mode!=='register');$('authRegisterTab').classList.toggle('active',mode==='register');$('authForm').reset();setTimeout(()=>$(mode==='register'?'authUsername':'authEmail')?.focus(),30)}
+function onlineCloseAuth(){$('authModal')?.classList.add('hidden')}
+window.ASTRO_AUTH={open:onlineOpenAuth,close:onlineCloseAuth,submit:onlineAuthSubmit};
+window.onlineRefresh=onlineRefresh;
+async function onlineLogout(){
+  onlineToken='';localStorage.removeItem('astro_online_token');onlineSetUser(null);state.route='home';render();
+}
+async function onlineSaveProfile(form){
+  const username=new FormData(form).get('username');
+  if(!username)return;
+  try{const d=await onlineFetch('/api/profile',{method:'PUT',body:JSON.stringify({username})});onlineSetUser(d.user);toast('Профиль обновлён');renderCabinet();}
+  catch(e){toast(e.message,'danger');}
+}
+async function onlineBuyRank(id){
+  if(!state.user){onlineOpenAuth('login');return;}
+  try{const d=await onlineFetch('/api/ranks/'+encodeURIComponent(id)+'/buy',{method:'POST'});onlineSetUser(d.user);toast('✦ Ранг '+d.rank.name+' куплен');await onlineRefresh();if(state.route==='ranks')renderRanks();}
+  catch(e){toast(e.message,'danger');}
+}
+async function onlineClaimQuest(id){
+  if(!state.user){onlineOpenAuth('login');return;}
+  try{const d=await onlineFetch('/api/quests/'+encodeURIComponent(id)+'/claim',{method:'POST'});onlineSetUser(d.user);toast('✓ Квест выполнен: +'+d.reward+' ₽ / +'+d.xp+' XP');await onlineRefresh();if(state.route==='quests')renderQuests();}
+  catch(e){toast(e.message,'danger');}
+}
+function renderQuests(){
+  const qs=Array.isArray(state.quests)?state.quests:[];
+  app.innerHTML=`<section class="section"><div class="section-head"><div><div class="eyebrow">LIVE QUEST ENGINE</div><h2>Квесты</h2><p class="muted">Общие квесты сервера. Награда сохраняется в твоём онлайн-профиле.</p></div><span class="muted">ONLINE</span></div><div class="quest-grid">${qs.map(q=>{const claimed=!!state.user?.claimedQuests?.[q.id];return `<article class="glass quest-card"><div class="eyebrow">DAILY QUEST</div><h3>${esc(q.title)}</h3><p class="muted">${esc(q.description||'Выполни задание.')}</p><div class="quest-reward"><span>Награда</span><b>${Number(q.reward||0).toLocaleString('ru-RU')} ₽ · ${Number(q.xp||0)} XP</b></div><button class="btn ${claimed?'btn-secondary':'btn-primary'}" data-online-claim="${esc(q.id)}" ${claimed?'disabled':''}>${claimed?'✓ Получено':'Забрать награду'}</button></article>`}).join('')||'<div class="empty">Квестов пока нет.</div>'}</div></section>`;
+}
+function renderCabinet(){
+  if(!state.user){app.innerHTML=`<section class="section"><div class="panel" style="padding:40px;text-align:center"><div class="eyebrow">ASTRO ID</div><h2>Войди в аккаунт</h2><p class="muted">Профиль доступен после входа.</p><button class="btn btn-primary" data-open-auth>Войти / зарегистрироваться</button></div></section>`;return;}
+  const r=getCurrentRank();
+  const hist=Array.isArray(state.user.history)?state.user.history:[];
+  app.innerHTML=`<section class="section"><div class="section-head"><div><div class="eyebrow">ONLINE PROFILE</div><h2>${esc(state.user.username)}</h2><p class="muted">${esc(state.user.email)}</p></div><button class="btn btn-secondary" data-online-logout>Выйти</button></div><div class="feature-grid"><article class="glass feature"><div class="eyebrow">BALANCE</div><h3>${money(state.user.balance)}</h3></article><article class="glass feature"><div class="eyebrow">ELO</div><h3>${Number(state.user.elo||0).toLocaleString('ru-RU')}</h3></article><article class="glass feature"><div class="eyebrow">RANK</div><h3 style="color:${r?.color||'#fff'}">${r?.icon||'◆'} ${r?.name||'BRONZE'}</h3></article></div><div class="panel" style="padding:24px;margin-top:20px"><div class="eyebrow">EDIT PROFILE</div><form id="onlineProfileForm" class="actions"><input class="field" style="padding:12px" name="username" maxlength="20" value="${esc(state.user.username)}"><button class="btn btn-primary">Сохранить</button></form></div><div class="panel" style="padding:24px;margin-top:20px"><div class="eyebrow">HISTORY</div>${hist.slice(0,20).map(x=>`<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06)"><span>${esc(x.title||'Событие')}</span><b>${Number(x.amount||0)>0?'+':''}${Number(x.amount||0).toLocaleString('ru-RU')} ₽</b></div>`).join('')||'<span class="muted">История пока пуста.</span>'}</div></section>`;
+}
+// Capture online actions before the old local click handlers.
+document.addEventListener('click',e=>{
+  const q=e.target.closest('[data-online-claim]'); if(q){e.preventDefault();e.stopImmediatePropagation();onlineClaimQuest(q.dataset.onlineClaim);return;}
+  const r=e.target.closest('[data-buy-rank]'); if(r){e.preventDefault();e.stopImmediatePropagation();onlineBuyRank(r.dataset.buyRank);return;}
+  const l=e.target.closest('[data-online-logout]'); if(l){e.preventDefault();e.stopImmediatePropagation();onlineLogout();return;}
+},true);
+document.addEventListener('submit',e=>{if(e.target.id==='onlineProfileForm'){e.preventDefault();e.stopImmediatePropagation();onlineSaveProfile(e.target);}},true);
+// Keep everyone looking at the same leaderboard/profile state.
+setInterval(onlineRefresh,2000);
+if(onlineToken) onlineRefresh();
+
+initParticles();render();
+})();
+</script>
+<script src="/socket.io/socket.io.js"></script><script>try{window.addEventListener("load",()=>{if(window.io){const s=io();s.on("leaderboard:update",()=>{if(window.onlineRefresh)window.onlineRefresh();});}})}catch(e){}</script>
+</body>
+</html>

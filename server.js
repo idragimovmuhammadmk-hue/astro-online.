@@ -1,10 +1,8 @@
-# server.js
-
-```js
 const express = require("express");
 const http = require("http");
 const path = require("path");
 const fs = require("fs");
+const crypto = require("crypto");
 const { Server } = require("socket.io");
 
 const app = express();
@@ -15,745 +13,948 @@ const PORT = process.env.PORT || 3000;
 const DATA_FILE = path.join(__dirname, "data.json");
 
 app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
-function defaultData() {
-    return {
-        players: [
-            {
-                id: "player-1",
-                username: "ASTRO",
-                elo: 2500,
-                xp: 1200,
-                wins: 42,
-                balance: 100000,
-                rank: "starter"
-            },
-            {
-                id: "player-2",
-                username: "Cosmo",
-                elo: 1850,
-                xp: 850,
-                wins: 25,
-                balance: 50000,
-                rank: "bronze"
-            },
-            {
-                id: "player-3",
-                username: "Nova",
-                elo: 1600,
-                xp: 620,
-                wins: 18,
-                balance: 25000,
-                rank: "bronze"
-            }
-        ],
+/* =========================================================
+   DATABASE
+========================================================= */
 
-        ranks: [
-            {
-                id: "starter",
-                rankId: "starter",
-                name: "STARTER",
-                title: "Новичок",
-                price: 0,
-                color: "#8b93a7",
-                icon: "✦",
-                minElo: 0
-            },
-            {
-                id: "bronze",
-                rankId: "bronze",
-                name: "BRONZE",
-                title: "Бронзовый",
-                price: 10000,
-                color: "#cd7f32",
-                icon: "◆",
-                minElo: 1000
-            },
-            {
-                id: "silver",
-                rankId: "silver",
-                name: "SILVER",
-                title: "Серебряный",
-                price: 25000,
-                color: "#c9d2df",
-                icon: "◇",
-                minElo: 1500
-            },
-            {
-                id: "gold",
-                rankId: "gold",
-                name: "GOLD",
-                title: "Золотой",
-                price: 50000,
-                color: "#ffd700",
-                icon: "★",
-                minElo: 2000
-            },
-            {
-                id: "diamond",
-                rankId: "diamond",
-                name: "DIAMOND",
-                title: "Алмазный",
-                price: 100000,
-                color: "#45eaff",
-                icon: "◆",
-                minElo: 2500
-            }
-        ],
-
-        quests: [
-            {
-                id: "first-win",
-                questId: "first-win",
-                title: "Первая победа",
-                description: "Получите свою первую победу.",
-                reward: 1000,
-                xp: 100
-            },
-            {
-                id: "champion",
-                questId: "champion",
-                title: "Чемпион",
-                description: "Наберите 10 побед.",
-                reward: 5000,
-                xp: 500
-            }
-        ]
-    };
-}
+const DEFAULT_DATA = {
+    users: [],
+    ranks: [
+        {
+            id: "bronze",
+            rankId: "bronze",
+            name: "BRONZE",
+            title: "Начинающий",
+            price: 1000,
+            color: "#cd7f32",
+            icon: "🥉"
+        },
+        {
+            id: "silver",
+            rankId: "silver",
+            name: "SILVER",
+            title: "Опытный",
+            price: 5000,
+            color: "#c0c0c0",
+            icon: "🥈"
+        },
+        {
+            id: "gold",
+            rankId: "gold",
+            name: "GOLD",
+            title: "Элитный",
+            price: 15000,
+            color: "#ffd700",
+            icon: "🥇"
+        },
+        {
+            id: "diamond",
+            rankId: "diamond",
+            name: "DIAMOND",
+            title: "Мастер",
+            price: 50000,
+            color: "#55ddff",
+            icon: "💎"
+        }
+    ],
+    quests: [
+        {
+            id: "welcome",
+            questId: "welcome",
+            title: "Добро пожаловать",
+            description: "Получите стартовую награду.",
+            reward: 500,
+            xp: 100
+        }
+    ]
+};
 
 function loadData() {
     try {
         if (!fs.existsSync(DATA_FILE)) {
-            const data = defaultData();
-            saveData(data);
-            return data;
+            fs.writeFileSync(
+                DATA_FILE,
+                JSON.stringify(DEFAULT_DATA, null, 2),
+                "utf8"
+            );
+            return JSON.parse(JSON.stringify(DEFAULT_DATA));
         }
 
         const raw = fs.readFileSync(DATA_FILE, "utf8");
         const data = JSON.parse(raw);
 
-        data.players ||= [];
-        data.ranks ||= [];
-        data.quests ||= [];
+        if (!Array.isArray(data.users)) data.users = [];
+        if (!Array.isArray(data.ranks)) data.ranks = [];
+        if (!Array.isArray(data.quests)) data.quests = [];
 
         return data;
-    } catch (error) {
-        console.error("Ошибка чтения data.json:", error);
+    } catch (err) {
+        console.error("Ошибка чтения data.json:", err);
 
-        const data = defaultData();
-        saveData(data);
+        fs.writeFileSync(
+            DATA_FILE,
+            JSON.stringify(DEFAULT_DATA, null, 2),
+            "utf8"
+        );
 
-        return data;
+        return JSON.parse(JSON.stringify(DEFAULT_DATA));
     }
-}
-
-function saveData(data) {
-    const temp = DATA_FILE + ".tmp";
-
-    fs.writeFileSync(
-        temp,
-        JSON.stringify(data, null, 2),
-        "utf8"
-    );
-
-    fs.renameSync(temp, DATA_FILE);
 }
 
 let db = loadData();
 
-function sendUpdate() {
-    io.emit("data:update");
-
-    io.emit("leaderboard:update");
-    io.emit("ranks:update");
-    io.emit("quests:update");
-}
-
-function cleanPlayer(player) {
-    return {
-        id: player.id,
-        username: player.username,
-        elo: Number(player.elo) || 0,
-        xp: Number(player.xp) || 0,
-        wins: Number(player.wins) || 0,
-        balance: Number(player.balance) || 0,
-        rank: player.rank || "starter"
-    };
-}
-
-function getRankForPlayer(player) {
-    const current = db.ranks
-        .filter(rank => Number(rank.minElo || 0) <= Number(player.elo || 0))
-        .sort((a, b) =>
-            Number(b.minElo || 0) - Number(a.minElo || 0)
-        )[0];
-
-    return current || db.ranks[0] || null;
-}
-
-function syncPlayerRank(player) {
-    const rank = getRankForPlayer(player);
-
-    if (rank) {
-        player.rank = rank.rankId || rank.id;
+function saveData() {
+    try {
+        fs.writeFileSync(
+            DATA_FILE,
+            JSON.stringify(db, null, 2),
+            "utf8"
+        );
+        return true;
+    } catch (err) {
+        console.error("Ошибка сохранения:", err);
+        return false;
     }
 }
 
-function getLeaderboard() {
-    return [...db.players]
-        .sort((a, b) => {
-            if (Number(b.elo) !== Number(a.elo)) {
-                return Number(b.elo) - Number(a.elo);
-            }
+/* =========================================================
+   PASSWORD
+========================================================= */
 
-            return Number(b.xp) - Number(a.xp);
-        })
-        .map(cleanPlayer);
+function hashPassword(password) {
+    const salt = crypto.randomBytes(16).toString("hex");
+
+    const hash = crypto
+        .scryptSync(password, salt, 64)
+        .toString("hex");
+
+    return `${salt}:${hash}`;
 }
 
-function validNumber(value) {
-    return Number.isFinite(Number(value));
+function checkPassword(password, stored) {
+    try {
+        const parts = String(stored).split(":");
+
+        if (parts.length !== 2) return false;
+
+        const salt = parts[0];
+        const oldHash = parts[1];
+
+        const newHash = crypto
+            .scryptSync(password, salt, 64)
+            .toString("hex");
+
+        return crypto.timingSafeEqual(
+            Buffer.from(oldHash, "hex"),
+            Buffer.from(newHash, "hex")
+        );
+    } catch {
+        return false;
+    }
 }
 
-/* =========================
-   MAIN
-========================= */
+/* =========================================================
+   TOKENS
+========================================================= */
+
+const sessions = new Map();
+
+function createToken(userId) {
+    const token = crypto.randomBytes(32).toString("hex");
+
+    sessions.set(token, {
+        userId,
+        created: Date.now()
+    });
+
+    return token;
+}
+
+function getUserFromToken(token) {
+    if (!token) return null;
+
+    const session = sessions.get(token);
+
+    if (!session) return null;
+
+    const user = db.users.find(
+        u => u.id === session.userId
+    );
+
+    return user || null;
+}
+
+function auth(req, res, next) {
+    const header = req.headers.authorization || "";
+
+    if (!header.startsWith("Bearer ")) {
+        return res.status(401).json({
+            error: "Вы не авторизованы"
+        });
+    }
+
+    const token = header.slice(7);
+    const user = getUserFromToken(token);
+
+    if (!user) {
+        return res.status(401).json({
+            error: "Сессия недействительна"
+        });
+    }
+
+    req.token = token;
+    req.user = user;
+
+    next();
+}
+
+function admin(req, res, next) {
+    if (!req.user.admin) {
+        return res.status(403).json({
+            error: "Нет доступа к админке"
+        });
+    }
+
+    next();
+}
+
+/* =========================================================
+   USER PUBLIC DATA
+========================================================= */
+
+function publicUser(user) {
+    if (!user) return null;
+
+    return {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        balance: Number(user.balance || 0),
+        elo: Number(user.elo || 0),
+        xp: Number(user.xp || 0),
+        wins: Number(user.wins || 0),
+        ownedRanks: Array.isArray(user.ownedRanks)
+            ? user.ownedRanks
+            : [],
+        rankId: user.rankId || null,
+        admin: Boolean(user.admin)
+    };
+}
+
+/* =========================================================
+   ROOT
+========================================================= */
 
 app.get("/", (req, res) => {
     res.sendFile(path.join(__dirname, "index.html"));
 });
 
-/* =========================
-   PLAYERS
-========================= */
+/* =========================================================
+   AUTH
+========================================================= */
 
-app.get("/api/players", (req, res) => {
+app.post("/api/register", (req, res) => {
+    try {
+        const username = String(req.body.username || "").trim();
+        const email = String(req.body.email || "").trim().toLowerCase();
+        const password = String(req.body.password || "");
+
+        if (username.length < 3) {
+            return res.status(400).json({
+                error: "Никнейм должен содержать минимум 3 символа"
+            });
+        }
+
+        if (username.length > 30) {
+            return res.status(400).json({
+                error: "Никнейм слишком длинный"
+            });
+        }
+
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+            return res.status(400).json({
+                error: "Введите правильный Email"
+            });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({
+                error: "Пароль должен содержать минимум 6 символов"
+            });
+        }
+
+        const emailExists = db.users.some(
+            u => u.email.toLowerCase() === email
+        );
+
+        if (emailExists) {
+            return res.status(409).json({
+                error: "Этот Email уже зарегистрирован"
+            });
+        }
+
+        const usernameExists = db.users.some(
+            u => u.username.toLowerCase() === username.toLowerCase()
+        );
+
+        if (usernameExists) {
+            return res.status(409).json({
+                error: "Этот никнейм уже занят"
+            });
+        }
+
+        const user = {
+            id: crypto.randomUUID(),
+            username,
+            email,
+            password: hashPassword(password),
+
+            balance: 10000,
+            elo: 1000,
+            xp: 0,
+            wins: 0,
+
+            ownedRanks: [],
+            rankId: null,
+
+            claimedQuests: [],
+
+            admin: db.users.length === 0,
+
+            createdAt: Date.now()
+        };
+
+        db.users.push(user);
+
+        saveData();
+
+        const token = createToken(user.id);
+
+        return res.json({
+            ok: true,
+            token,
+            user: publicUser(user)
+        });
+
+    } catch (err) {
+        console.error("REGISTER:", err);
+
+        res.status(500).json({
+            error: "Ошибка регистрации"
+        });
+    }
+});
+
+app.post("/api/login", (req, res) => {
+    try {
+        const email = String(req.body.email || "")
+            .trim()
+            .toLowerCase();
+
+        const password = String(req.body.password || "");
+
+        if (!email || !password) {
+            return res.status(400).json({
+                error: "Введите Email и пароль"
+            });
+        }
+
+        const user = db.users.find(
+            u => u.email.toLowerCase() === email
+        );
+
+        if (!user) {
+            return res.status(401).json({
+                error: "Неверный Email или пароль"
+            });
+        }
+
+        if (!checkPassword(password, user.password)) {
+            return res.status(401).json({
+                error: "Неверный Email или пароль"
+            });
+        }
+
+        const token = createToken(user.id);
+
+        res.json({
+            ok: true,
+            token,
+            user: publicUser(user)
+        });
+
+    } catch (err) {
+        console.error("LOGIN:", err);
+
+        res.status(500).json({
+            error: "Ошибка авторизации"
+        });
+    }
+});
+
+app.post("/api/logout", auth, (req, res) => {
+    sessions.delete(req.token);
+
     res.json({
-        players: db.players.map(cleanPlayer)
+        ok: true
     });
 });
 
-app.get("/api/players/:id", (req, res) => {
-    const player = db.players.find(
-        p => p.id === req.params.id
-    );
-
-    if (!player) {
-        return res.status(404).json({
-            error: "Игрок не найден"
-        });
-    }
-
-    res.json({
-        player: cleanPlayer(player),
-        rank: getRankForPlayer(player)
-    });
-});
-
-app.post("/api/players", (req, res) => {
-    const username = String(req.body.username || "").trim();
-
-    if (!username) {
-        return res.status(400).json({
-            error: "Введите никнейм"
-        });
-    }
-
-    const exists = db.players.some(
-        p => p.username.toLowerCase() === username.toLowerCase()
-    );
-
-    if (exists) {
-        return res.status(400).json({
-            error: "Такой игрок уже существует"
-        });
-    }
-
-    const player = {
-        id: "player-" + Date.now(),
-        username,
-        elo: 1000,
-        xp: 0,
-        wins: 0,
-        balance: 10000,
-        rank: "starter"
-    };
-
-    db.players.push(player);
-    syncPlayerRank(player);
-    saveData(db);
-    sendUpdate();
-
+app.get("/api/me", auth, (req, res) => {
     res.json({
         ok: true,
-        player: cleanPlayer(player)
+        user: publicUser(req.user)
     });
 });
 
-/* =========================
-   PROFILE
-========================= */
+/* =========================================================
+   RANK SYSTEM
+========================================================= */
 
-app.get("/api/profile/:id", (req, res) => {
-    const player = db.players.find(
-        p => p.id === req.params.id
-    );
+function getRankForUser(user) {
+    if (!user || !user.rankId) return null;
 
-    if (!player) {
-        return res.status(404).json({
-            error: "Профиль не найден"
-        });
-    }
-
-    syncPlayerRank(player);
-
-    res.json({
-        player: cleanPlayer(player),
-        rank: getRankForPlayer(player)
-    });
-});
-
-/* =========================
-   LEADERBOARD
-========================= */
-
-app.get("/api/leaderboard", (req, res) => {
-    res.json({
-        players: getLeaderboard()
-    });
-});
-
-/* =========================
-   RANKS
-========================= */
+    return db.ranks.find(
+        r => r.rankId === user.rankId || r.id === user.rankId
+    ) || null;
+}
 
 app.get("/api/ranks", (req, res) => {
     res.json({
+        ok: true,
         ranks: db.ranks
     });
 });
 
-app.post("/api/ranks/:rankId/buy", (req, res) => {
-    const playerId = String(req.body.playerId || "");
-    const rankId = req.params.rankId;
-
-    const player = db.players.find(
-        p => p.id === playerId
-    );
-
-    if (!player) {
-        return res.status(404).json({
-            error: "Игрок не найден"
-        });
-    }
-
-    const rank = db.ranks.find(
-        r => (r.rankId || r.id) === rankId
-    );
-
-    if (!rank) {
-        return res.status(404).json({
-            error: "Ранг не найден"
-        });
-    }
-
-    const price = Math.max(0, Number(rank.price) || 0);
-
-    if (Number(player.balance) < price) {
-        return res.status(400).json({
-            error: "Недостаточно денег"
-        });
-    }
-
-    player.balance -= price;
-    player.rank = rank.rankId || rank.id;
-
-    saveData(db);
-    sendUpdate();
-
+app.get("/api/my-rank", auth, (req, res) => {
     res.json({
         ok: true,
-        player: cleanPlayer(player),
-        rank
+        rank: getRankForUser(req.user)
     });
 });
 
-/* =========================
+app.post("/api/ranks/:id/buy", auth, (req, res) => {
+    try {
+        const rank = db.ranks.find(
+            r =>
+                r.rankId === req.params.id ||
+                r.id === req.params.id
+        );
+
+        if (!rank) {
+            return res.status(404).json({
+                error: "Ранг не найден"
+            });
+        }
+
+        if (!Array.isArray(req.user.ownedRanks)) {
+            req.user.ownedRanks = [];
+        }
+
+        const alreadyOwned =
+            req.user.ownedRanks.includes(rank.rankId);
+
+        if (alreadyOwned) {
+            return res.status(400).json({
+                error: "Этот ранг уже куплен"
+            });
+        }
+
+        const price = Number(rank.price || 0);
+
+        if (Number(req.user.balance || 0) < price) {
+            return res.status(400).json({
+                error: "Недостаточно денег"
+            });
+        }
+
+        /* ДЕНЬГИ ДЕЙСТВИТЕЛЬНО СПИСЫВАЮТСЯ */
+        req.user.balance -= price;
+
+        /* РАНГ ДЕЙСТВИТЕЛЬНО ДОБАВЛЯЕТСЯ */
+        req.user.ownedRanks.push(rank.rankId);
+
+        /* ПОКУПАЕМЫЙ РАНГ СТАНОВИТСЯ ТЕКУЩИМ */
+        req.user.rankId = rank.rankId;
+
+        saveData();
+
+        io.emit("leaderboard:update");
+
+        res.json({
+            ok: true,
+            message: "Ранг куплен",
+            user: publicUser(req.user),
+            rank
+        });
+
+    } catch (err) {
+        console.error("BUY RANK:", err);
+
+        res.status(500).json({
+            error: "Ошибка покупки ранга"
+        });
+    }
+});
+
+/* =========================================================
    QUESTS
-========================= */
+========================================================= */
 
 app.get("/api/quests", (req, res) => {
     res.json({
+        ok: true,
         quests: db.quests
     });
 });
 
-app.post("/api/quests/:questId/claim", (req, res) => {
-    const playerId = String(req.body.playerId || "");
-    const questId = req.params.questId;
-
-    const player = db.players.find(
-        p => p.id === playerId
-    );
-
-    if (!player) {
-        return res.status(404).json({
-            error: "Игрок не найден"
-        });
-    }
-
-    const quest = db.quests.find(
-        q => (q.questId || q.id) === questId
-    );
-
-    if (!quest) {
-        return res.status(404).json({
-            error: "Квест не найден"
-        });
-    }
-
-    player.balance += Number(quest.reward) || 0;
-    player.xp += Number(quest.xp) || 0;
-
-    saveData(db);
-    sendUpdate();
-
-    res.json({
-        ok: true,
-        reward: Number(quest.reward) || 0,
-        xp: Number(quest.xp) || 0,
-        player: cleanPlayer(player)
-    });
-});
-
-/* =========================
-   ADMIN PLAYERS
-========================= */
-
-app.get("/api/admin/users", (req, res) => {
-    const search = String(req.query.search || "")
-        .trim()
-        .toLowerCase();
-
-    let players = db.players;
-
-    if (search) {
-        players = players.filter(player =>
-            player.username.toLowerCase().includes(search)
+app.post("/api/quests/:id/claim", auth, (req, res) => {
+    try {
+        const quest = db.quests.find(
+            q =>
+                q.questId === req.params.id ||
+                q.id === req.params.id
         );
-    }
 
-    res.json({
-        users: players.map(cleanPlayer)
-    });
-});
+        if (!quest) {
+            return res.status(404).json({
+                error: "Квест не найден"
+            });
+        }
 
-app.put("/api/admin/users/:id", (req, res) => {
-    const player = db.players.find(
-        p => p.id === req.params.id
-    );
+        if (!Array.isArray(req.user.claimedQuests)) {
+            req.user.claimedQuests = [];
+        }
 
-    if (!player) {
-        return res.status(404).json({
-            error: "Игрок не найден"
+        if (req.user.claimedQuests.includes(quest.questId)) {
+            return res.status(400).json({
+                error: "Этот квест уже выполнен"
+            });
+        }
+
+        const reward = Number(quest.reward || 0);
+        const xp = Number(quest.xp || 0);
+
+        req.user.balance += reward;
+        req.user.xp += xp;
+
+        req.user.claimedQuests.push(
+            quest.questId
+        );
+
+        saveData();
+
+        io.emit("leaderboard:update");
+
+        res.json({
+            ok: true,
+            reward,
+            xp,
+            user: publicUser(req.user)
+        });
+
+    } catch (err) {
+        console.error("QUEST:", err);
+
+        res.status(500).json({
+            error: "Ошибка выполнения квеста"
         });
     }
+});
 
-    if (req.body.elo !== undefined) {
-        if (!validNumber(req.body.elo)) {
-            return res.status(400).json({
-                error: "Неверный ELO"
-            });
-        }
+/* =========================================================
+   LEADERBOARD
+========================================================= */
 
-        player.elo = Math.max(0, Number(req.body.elo));
-    }
-
-    if (req.body.xp !== undefined) {
-        if (!validNumber(req.body.xp)) {
-            return res.status(400).json({
-                error: "Неверный XP"
-            });
-        }
-
-        player.xp = Math.max(0, Number(req.body.xp));
-    }
-
-    if (req.body.wins !== undefined) {
-        if (!validNumber(req.body.wins)) {
-            return res.status(400).json({
-                error: "Неверное количество побед"
-            });
-        }
-
-        player.wins = Math.max(0, Number(req.body.wins));
-    }
-
-    if (req.body.balance !== undefined) {
-        if (!validNumber(req.body.balance)) {
-            return res.status(400).json({
-                error: "Неверный баланс"
-            });
-        }
-
-        player.balance = Math.max(0, Number(req.body.balance));
-    }
-
-    syncPlayerRank(player);
-
-    saveData(db);
-    sendUpdate();
+app.get("/api/leaderboard", (req, res) => {
+    const players = db.users
+        .map(publicUser)
+        .sort((a, b) => {
+            return Number(b.elo) - Number(a.elo);
+        });
 
     res.json({
         ok: true,
-        player: cleanPlayer(player),
-        rank: getRankForPlayer(player)
+        players
     });
 });
 
-app.delete("/api/admin/users/:id", (req, res) => {
-    const index = db.players.findIndex(
-        p => p.id === req.params.id
-    );
+/* =========================================================
+   ADMIN - USERS
+========================================================= */
 
-    if (index === -1) {
-        return res.status(404).json({
-            error: "Игрок не найден"
-        });
-    }
+app.get(
+    "/api/admin/users",
+    auth,
+    admin,
+    (req, res) => {
+        const search = String(
+            req.query.search || ""
+        ).trim().toLowerCase();
 
-    db.players.splice(index, 1);
+        let users = db.users;
 
-    saveData(db);
-    sendUpdate();
-
-    res.json({
-        ok: true
-    });
-});
-
-/* =========================
-   ADMIN RANKS
-========================= */
-
-app.get("/api/admin/ranks", (req, res) => {
-    res.json({
-        ranks: db.ranks
-    });
-});
-
-app.post("/api/admin/ranks", (req, res) => {
-    const rankId = String(req.body.rankId || "").trim();
-    const name = String(req.body.name || "").trim();
-
-    if (!rankId || !name) {
-        return res.status(400).json({
-            error: "ID и название ранга обязательны"
-        });
-    }
-
-    const exists = db.ranks.some(
-        r => (r.rankId || r.id) === rankId
-    );
-
-    if (exists) {
-        return res.status(400).json({
-            error: "Такой ранг уже существует"
-        });
-    }
-
-    const rank = {
-        id: rankId,
-        rankId,
-        name,
-        title: String(req.body.title || ""),
-        price: Math.max(0, Number(req.body.price) || 0),
-        color: String(req.body.color || "#9b7cff"),
-        icon: String(req.body.icon || "★"),
-        minElo: Math.max(0, Number(req.body.minElo) || 0)
-    };
-
-    db.ranks.push(rank);
-
-    saveData(db);
-    sendUpdate();
-
-    res.json({
-        ok: true,
-        rank
-    });
-});
-
-app.delete("/api/admin/ranks/:id", (req, res) => {
-    const index = db.ranks.findIndex(
-        r => (r.id || r.rankId) === req.params.id
-    );
-
-    if (index === -1) {
-        return res.status(404).json({
-            error: "Ранг не найден"
-        });
-    }
-
-    if (db.ranks.length <= 1) {
-        return res.status(400).json({
-            error: "Нельзя удалить последний ранг"
-        });
-    }
-
-    db.ranks.splice(index, 1);
-
-    for (const player of db.players) {
-        if (!db.ranks.some(
-            r => (r.rankId || r.id) === player.rank
-        )) {
-            syncPlayerRank(player);
+        if (search) {
+            users = users.filter(u =>
+                u.username.toLowerCase().includes(search) ||
+                u.email.toLowerCase().includes(search)
+            );
         }
-    }
 
-    saveData(db);
-    sendUpdate();
-
-    res.json({
-        ok: true
-    });
-});
-
-/* =========================
-   ADMIN QUESTS
-========================= */
-
-app.get("/api/admin/quests", (req, res) => {
-    res.json({
-        quests: db.quests
-    });
-});
-
-app.post("/api/admin/quests", (req, res) => {
-    const questId = String(req.body.questId || "").trim();
-    const title = String(req.body.title || "").trim();
-
-    if (!questId || !title) {
-        return res.status(400).json({
-            error: "ID и название квеста обязательны"
+        res.json({
+            ok: true,
+            users: users.map(publicUser)
         });
     }
+);
 
-    const exists = db.quests.some(
-        q => (q.questId || q.id) === questId
-    );
+app.put(
+    "/api/admin/users/:id",
+    auth,
+    admin,
+    (req, res) => {
+        const user = db.users.find(
+            u => u.id === req.params.id
+        );
 
-    if (exists) {
-        return res.status(400).json({
-            error: "Такой квест уже существует"
+        if (!user) {
+            return res.status(404).json({
+                error: "Игрок не найден"
+            });
+        }
+
+        if (req.body.elo !== undefined) {
+            user.elo = Math.max(
+                0,
+                Number(req.body.elo) || 0
+            );
+        }
+
+        if (req.body.wins !== undefined) {
+            user.wins = Math.max(
+                0,
+                Number(req.body.wins) || 0
+            );
+        }
+
+        if (req.body.balance !== undefined) {
+            user.balance = Math.max(
+                0,
+                Number(req.body.balance) || 0
+            );
+        }
+
+        if (req.body.xp !== undefined) {
+            user.xp = Math.max(
+                0,
+                Number(req.body.xp) || 0
+            );
+        }
+
+        if (req.body.rankId !== undefined) {
+            user.rankId =
+                req.body.rankId || null;
+        }
+
+        saveData();
+
+        io.emit("leaderboard:update");
+
+        res.json({
+            ok: true,
+            user: publicUser(user)
         });
     }
+);
 
-    const quest = {
-        id: questId,
-        questId,
-        title,
-        description: String(req.body.description || ""),
-        reward: Math.max(0, Number(req.body.reward) || 0),
-        xp: Math.max(0, Number(req.body.xp) || 0)
-    };
+/* =========================================================
+   ADMIN - GIVE
+========================================================= */
 
-    db.quests.push(quest);
+app.post(
+    "/api/admin/users/:id/give",
+    auth,
+    admin,
+    (req, res) => {
+        const user = db.users.find(
+            u => u.id === req.params.id
+        );
 
-    saveData(db);
-    sendUpdate();
+        if (!user) {
+            return res.status(404).json({
+                error: "Игрок не найден"
+            });
+        }
 
-    res.json({
-        ok: true,
-        quest
-    });
-});
+        const money = Number(req.body.money || 0);
+        const elo = Number(req.body.elo || 0);
+        const xp = Number(req.body.xp || 0);
+        const wins = Number(req.body.wins || 0);
 
-app.delete("/api/admin/quests/:id", (req, res) => {
-    const index = db.quests.findIndex(
-        q => (q.id || q.questId) === req.params.id
-    );
+        user.balance += money;
+        user.elo += elo;
+        user.xp += xp;
+        user.wins += wins;
 
-    if (index === -1) {
-        return res.status(404).json({
-            error: "Квест не найден"
+        saveData();
+
+        io.emit("leaderboard:update");
+
+        res.json({
+            ok: true,
+            user: publicUser(user)
         });
     }
+);
 
-    db.quests.splice(index, 1);
+/* =========================================================
+   ADMIN - RANKS
+========================================================= */
 
-    saveData(db);
-    sendUpdate();
+app.get(
+    "/api/admin/ranks",
+    auth,
+    admin,
+    (req, res) => {
+        res.json({
+            ok: true,
+            ranks: db.ranks
+        });
+    }
+);
 
-    res.json({
-        ok: true
-    });
-});
+app.post(
+    "/api/admin/ranks",
+    auth,
+    admin,
+    (req, res) => {
+        const rankId = String(
+            req.body.rankId || ""
+        ).trim();
 
-/* =========================
+        const name = String(
+            req.body.name || ""
+        ).trim();
+
+        if (!rankId || !name) {
+            return res.status(400).json({
+                error: "ID и название обязательны"
+            });
+        }
+
+        if (
+            db.ranks.some(
+                r => r.rankId === rankId
+            )
+        ) {
+            return res.status(409).json({
+                error: "Такой ранг уже существует"
+            });
+        }
+
+        const rank = {
+            id: crypto.randomUUID(),
+            rankId,
+            name,
+            title: String(req.body.title || ""),
+            price: Math.max(
+                0,
+                Number(req.body.price) || 0
+            ),
+            color: String(
+                req.body.color || "#9b7cff"
+            ),
+            icon: String(
+                req.body.icon || "★"
+            )
+        };
+
+        db.ranks.push(rank);
+
+        saveData();
+
+        io.emit("ranks:update");
+
+        res.json({
+            ok: true,
+            rank
+        });
+    }
+);
+
+app.delete(
+    "/api/admin/ranks/:id",
+    auth,
+    admin,
+    (req, res) => {
+        const index = db.ranks.findIndex(
+            r =>
+                r.id === req.params.id ||
+                r.rankId === req.params.id
+        );
+
+        if (index === -1) {
+            return res.status(404).json({
+                error: "Ранг не найден"
+            });
+        }
+
+        db.ranks.splice(index, 1);
+
+        saveData();
+
+        io.emit("ranks:update");
+
+        res.json({
+            ok: true
+        });
+    }
+);
+
+/* =========================================================
+   ADMIN - QUESTS
+========================================================= */
+
+app.get(
+    "/api/admin/quests",
+    auth,
+    admin,
+    (req, res) => {
+        res.json({
+            ok: true,
+            quests: db.quests
+        });
+    }
+);
+
+app.post(
+    "/api/admin/quests",
+    auth,
+    admin,
+    (req, res) => {
+        const questId = String(
+            req.body.questId || ""
+        ).trim();
+
+        const title = String(
+            req.body.title || ""
+        ).trim();
+
+        if (!questId || !title) {
+            return res.status(400).json({
+                error: "ID и название обязательны"
+            });
+        }
+
+        if (
+            db.quests.some(
+                q => q.questId === questId
+            )
+        ) {
+            return res.status(409).json({
+                error: "Такой квест уже существует"
+            });
+        }
+
+        const quest = {
+            id: crypto.randomUUID(),
+            questId,
+            title,
+            description: String(
+                req.body.description || ""
+            ),
+            reward: Math.max(
+                0,
+                Number(req.body.reward) || 0
+            ),
+            xp: Math.max(
+                0,
+                Number(req.body.xp) || 0
+            )
+        };
+
+        db.quests.push(quest);
+
+        saveData();
+
+        io.emit("quests:update");
+
+        res.json({
+            ok: true,
+            quest
+        });
+    }
+);
+
+app.delete(
+    "/api/admin/quests/:id",
+    auth,
+    admin,
+    (req, res) => {
+        const index = db.quests.findIndex(
+            q =>
+                q.id === req.params.id ||
+                q.questId === req.params.id
+        );
+
+        if (index === -1) {
+            return res.status(404).json({
+                error: "Квест не найден"
+            });
+        }
+
+        db.quests.splice(index, 1);
+
+        saveData();
+
+        io.emit("quests:update");
+
+        res.json({
+            ok: true
+        });
+    }
+);
+
+/* =========================================================
    SOCKET.IO
-========================= */
+========================================================= */
 
 io.on("connection", socket => {
-    socket.emit("data:update");
+    console.log("Клиент подключён:", socket.id);
 
-    socket.on("refresh", () => {
-        socket.emit("data:update");
+    socket.on("disconnect", () => {
+        console.log("Клиент отключён:", socket.id);
     });
 });
 
-/* =========================
+/* =========================================================
    ERRORS
-========================= */
+========================================================= */
 
-app.use((req, res) => {
-    if (req.path.startsWith("/api/")) {
-        return res.status(404).json({
-            error: "API маршрут не найден"
-        });
-    }
-
-    res.status(404).send("Страница не найдена");
-});
-
-app.use((error, req, res, next) => {
-    console.error(error);
+app.use((err, req, res, next) => {
+    console.error("SERVER ERROR:", err);
 
     res.status(500).json({
         error: "Внутренняя ошибка сервера"
     });
 });
 
-/* =========================
+/* =========================================================
    START
-========================= */
+========================================================= */
 
 server.listen(PORT, () => {
     console.log("");
-    console.log("=================================");
+    console.log("====================================");
     console.log("       ASTRO ONLINE SERVER");
-    console.log("=================================");
-    console.log(`Сайт запущен: http://localhost:${PORT}`);
-    console.log(`Порт: ${PORT}`);
-    console.log("Авторизация отключена.");
-    console.log("Данные сохраняются в data.json");
-    console.log("=================================");
+    console.log("====================================");
+    console.log(`Сайт: http://localhost:${PORT}`);
+    console.log(`Пользователей: ${db.users.length}`);
+    console.log(`Рангов: ${db.ranks.length}`);
+    console.log(`Квестов: ${db.quests.length}`);
+    console.log("====================================");
     console.log("");
 });
-```
-
-**Важно:** установи зависимости:
-
-```bash
-npm install express socket.io
-```
-
-И запускай:
-
-```bash
-node server.js
-```
-
-После первого запуска сервер сам создаст `data.json`.

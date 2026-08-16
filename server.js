@@ -1,4 +1,4 @@
-# Новый server.js
+// Новый server.js
 
 ```js
 "use strict";

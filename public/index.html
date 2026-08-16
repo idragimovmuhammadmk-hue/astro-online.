@@ -6,17 +6,21 @@
 
 <title>ASTRO ONLINE</title>
 
+<script src="/socket.io/socket.io.js"></script>
+
 <style>
+
 *{
     box-sizing:border-box;
 }
 
-html,body{
+html,
+body{
     margin:0;
     min-height:100%;
     font-family:Arial,Helvetica,sans-serif;
-    color:#fff;
-    background:#03030b;
+    color:white;
+    background:#02020a;
 }
 
 body{
@@ -30,118 +34,129 @@ body{
 .space{
     position:fixed;
     inset:0;
-    z-index:-10;
+    z-index:-20;
     overflow:hidden;
     background:
         radial-gradient(
-            circle at 20% 20%,
-            rgba(92,40,180,.28),
+            circle at 15% 20%,
+            rgba(113,42,255,.25),
             transparent 30%
         ),
         radial-gradient(
-            circle at 80% 70%,
-            rgba(0,150,255,.20),
+            circle at 85% 70%,
+            rgba(0,183,255,.18),
             transparent 30%
         ),
         radial-gradient(
             circle at 50% 100%,
-            rgba(255,0,180,.14),
+            rgba(255,0,200,.13),
             transparent 35%
         ),
-        #03030b;
+        #02020a;
 }
 
-.space:before,
-.space:after{
-    content:"";
+.stars{
     position:absolute;
-    inset:-50%;
-
+    inset:-100%;
     background-image:
-        radial-gradient(
-            circle,
-            #fff 1px,
-            transparent 1.5px
-        ),
-        radial-gradient(
-            circle,
-            #8deaff 1px,
-            transparent 1.5px
-        ),
-        radial-gradient(
-            circle,
-            #c98cff 1px,
-            transparent 1.5px
-        );
+        radial-gradient(circle,#fff 1px,transparent 1.5px),
+        radial-gradient(circle,#8ce8ff 1px,transparent 1.5px),
+        radial-gradient(circle,#d48cff 1px,transparent 1.5px);
 
     background-size:
-        110px 110px,
-        170px 170px,
-        230px 230px;
+        90px 90px,
+        160px 160px,
+        240px 240px;
 
     background-position:
         0 0,
-        40px 70px,
+        40px 80px,
         100px 30px;
 
     opacity:.55;
 
     animation:
-        stars 80s linear infinite;
+        starsMove 80s linear infinite;
 }
 
-.space:after{
-    opacity:.25;
-    transform:scale(1.5);
+.stars2{
+    position:absolute;
+    inset:-100%;
 
-    animation-duration:120s;
+    background-image:
+        radial-gradient(circle,#fff 1px,transparent 2px);
+
+    background-size:130px 130px;
+
+    opacity:.2;
+
+    animation:
+        starsMove2 120s linear infinite;
 }
 
-@keyframes stars{
+@keyframes starsMove{
     from{
         transform:translate3d(0,0,0);
     }
 
     to{
-        transform:translate3d(250px,500px,0);
+        transform:translate3d(300px,600px,0);
+    }
+}
+
+@keyframes starsMove2{
+    from{
+        transform:translate3d(0,0,0);
+    }
+
+    to{
+        transform:translate3d(-400px,400px,0);
     }
 }
 
 .nebula{
     position:absolute;
+
     width:600px;
     height:600px;
+
     border-radius:50%;
+
     filter:blur(100px);
-    opacity:.22;
+
+    opacity:.2;
 
     animation:
-        float 12s ease-in-out infinite alternate;
+        nebulaFloat 13s ease-in-out infinite alternate;
 }
 
-.n1{
-    background:#7b2cff;
-    top:-200px;
-    left:-150px;
+.nebula1{
+    background:#792cff;
+    left:-250px;
+    top:-250px;
 }
 
-.n2{
-    background:#00c8ff;
-    right:-200px;
-    bottom:-200px;
-    animation-delay:-4s;
+.nebula2{
+    background:#00bfff;
+    right:-250px;
+    bottom:-250px;
+
+    animation-delay:-5s;
 }
 
-.n3{
-    background:#ff20ce;
-    left:40%;
-    top:40%;
+.nebula3{
+    background:#ff20ca;
+
     width:350px;
     height:350px;
-    animation-delay:-7s;
+
+    left:45%;
+    top:45%;
+
+    animation-delay:-8s;
 }
 
-@keyframes float{
+@keyframes nebulaFloat{
     from{
         transform:translate(0,0) scale(1);
     }
@@ -158,46 +173,71 @@ body{
 header{
     position:sticky;
     top:0;
-    z-index:100;
+    z-index:1000;
 
     display:flex;
     align-items:center;
     justify-content:space-between;
 
-    padding:16px 28px;
+    gap:20px;
+
+    padding:15px 25px;
 
     border-bottom:
         1px solid rgba(255,255,255,.1);
 
     background:
-        rgba(4,4,15,.72);
+        rgba(4,4,16,.72);
 
-    backdrop-filter:blur(18px);
+    backdrop-filter:
+        blur(20px);
+
+    box-shadow:
+        0 10px 50px rgba(0,0,0,.3);
 }
 
 .logo{
-    font-size:25px;
+    font-size:24px;
     font-weight:900;
+
     letter-spacing:4px;
 
-    color:#fff;
+    white-space:nowrap;
 
     text-shadow:
-        0 0 8px #8d5cff,
-        0 0 25px #5c35ff;
+        0 0 8px #fff,
+        0 0 20px #854cff,
+        0 0 50px #5e2dff;
+
+    animation:
+        logoGlow 3s ease-in-out infinite alternate;
+}
+
+@keyframes logoGlow{
+    from{
+        filter:brightness(1);
+    }
+
+    to{
+        filter:brightness(1.35);
+    }
 }
 
 nav{
     display:flex;
-    gap:8px;
+    gap:7px;
     flex-wrap:wrap;
+    justify-content:flex-end;
 }
 
+/* =========================
+   BUTTONS
+========================= */
+
 button{
-    border:0;
-    color:#fff;
-    cursor:pointer;
     font:inherit;
+    color:white;
+    cursor:pointer;
 }
 
 .nav-btn,
@@ -206,43 +246,82 @@ button{
 
     padding:10px 15px;
 
+    border-radius:12px;
+
     border:
         1px solid rgba(255,255,255,.12);
-
-    border-radius:12px;
 
     background:
         rgba(255,255,255,.05);
 
-    transition:.25s;
+    transition:
+        .25s ease;
+
+    overflow:hidden;
+}
+
+.nav-btn::before,
+.action-btn::before,
+.primary::before{
+    content:"";
+
+    position:absolute;
+
+    width:0;
+    height:0;
+
+    left:50%;
+    top:50%;
+
+    transform:
+        translate(-50%,-50%);
+
+    border-radius:50%;
+
+    background:
+        rgba(255,255,255,.2);
+
+    transition:
+        width .4s,
+        height .4s;
+}
+
+.nav-btn:hover::before,
+.action-btn:hover::before,
+.primary:hover::before{
+    width:300px;
+    height:300px;
 }
 
 .nav-btn:hover,
 .action-btn:hover{
-    transform:translateY(-2px);
+    transform:
+        translateY(-3px);
+
+    border-color:
+        rgba(174,132,255,.9);
 
     background:
-        rgba(120,80,255,.2);
-
-    border-color:#9b7cff;
+        rgba(122,73,255,.18);
 
     box-shadow:
-        0 0 10px rgba(140,100,255,.7),
-        0 0 30px rgba(100,60,255,.25);
+        0 0 10px rgba(140,90,255,.8),
+        0 0 35px rgba(100,50,255,.35);
 }
 
 .admin-btn{
     background:
         linear-gradient(
             135deg,
-            #7c3cff,
-            #d52cff
+            #713bff,
+            #dc2cff
         );
 
-    border-color:#c58cff;
+    border-color:
+        rgba(255,255,255,.35);
 
     box-shadow:
-        0 0 18px rgba(150,60,255,.35);
+        0 0 20px rgba(150,60,255,.4);
 }
 
 /* =========================
@@ -251,8 +330,14 @@ button{
 
 main{
     width:min(1200px,94%);
-    margin:30px auto 80px;
+
+    margin:
+        25px auto 80px;
 }
+
+/* =========================
+   SECTIONS
+========================= */
 
 .section{
     display:none;
@@ -268,12 +353,16 @@ main{
 @keyframes sectionIn{
     from{
         opacity:0;
-        transform:translateY(15px);
+        transform:
+            translateY(20px)
+            scale(.99);
     }
 
     to{
         opacity:1;
-        transform:translateY(0);
+        transform:
+            translateY(0)
+            scale(1);
     }
 }
 
@@ -282,30 +371,34 @@ main{
 ========================= */
 
 .hero{
-    min-height:330px;
+    min-height:430px;
 
     display:flex;
+
+    flex-direction:column;
+
     align-items:center;
     justify-content:center;
 
     text-align:center;
-    flex-direction:column;
 
-    padding:40px 20px;
+    padding:50px 20px;
 }
 
 .hero h1{
     margin:0;
 
     font-size:
-        clamp(42px,8vw,85px);
+        clamp(48px,9vw,100px);
 
-    letter-spacing:10px;
+    letter-spacing:
+        12px;
 
     text-shadow:
-        0 0 12px #fff,
-        0 0 35px #7c4dff,
-        0 0 80px #4d2bff;
+        0 0 10px #fff,
+        0 0 30px #7d4dff,
+        0 0 70px #592bff,
+        0 0 120px #421cff;
 
     animation:
         titleGlow 3s ease-in-out infinite alternate;
@@ -313,57 +406,78 @@ main{
 
 @keyframes titleGlow{
     from{
+        transform:scale(1);
         filter:brightness(1);
     }
 
     to{
-        filter:brightness(1.35);
+        transform:scale(1.02);
+        filter:brightness(1.3);
     }
 }
 
 .hero p{
-    color:#aeb2d5;
-    font-size:18px;
     max-width:650px;
+
+    color:#a9add0;
+
+    font-size:18px;
+
+    line-height:1.7;
 }
 
 .hero-buttons{
     display:flex;
+
     gap:12px;
+
     flex-wrap:wrap;
+
     justify-content:center;
+
+    margin-top:15px;
 }
 
+/* =========================
+   PRIMARY
+========================= */
+
 .primary{
+    position:relative;
+
     padding:14px 25px;
+
+    border:1px solid #b890ff;
 
     border-radius:14px;
 
     background:
         linear-gradient(
             135deg,
-            #663cff,
-            #c52cff
+            #673cff,
+            #cf2cff
         );
 
     box-shadow:
-        0 0 25px rgba(130,60,255,.35);
+        0 0 25px rgba(130,60,255,.4);
+
+    overflow:hidden;
 
     transition:.25s;
 }
 
 .primary:hover{
     transform:
-        translateY(-3px)
+        translateY(-4px)
         scale(1.03);
 
     box-shadow:
-        0 0 15px #9b6cff,
-        0 0 45px rgba(150,70,255,.55);
+        0 0 15px #aa80ff,
+        0 0 50px rgba(160,70,255,.65);
 }
 
 /* =========================
-   CARDS
+   GRID
 ========================= */
 
 .grid{
@@ -378,42 +492,49 @@ main{
     gap:18px;
 }
 
+/* =========================
+   CARD
+========================= */
+
 .card{
     padding:20px;
 
     border:
         1px solid rgba(255,255,255,.1);
 
-    border-radius:18px;
+    border-radius:20px;
 
     background:
-        rgba(12,12,28,.72);
+        linear-gradient(
+            145deg,
+            rgba(17,17,38,.8),
+            rgba(8,8,22,.7)
+        );
 
-    backdrop-filter:blur(15px);
+    backdrop-filter:
+        blur(18px);
 
     box-shadow:
-        0 10px 40px rgba(0,0,0,.25);
+        0 15px 50px rgba(0,0,0,.25);
 
-    transition:.3s;
+    transition:
+        .3s ease;
 }
 
 .card:hover{
-    transform:translateY(-5px);
+    transform:
+        translateY(-5px);
 
     border-color:
-        rgba(155,120,255,.6);
+        rgba(163,126,255,.55);
 
     box-shadow:
-        0 0 20px rgba(120,70,255,.2),
-        0 15px 50px rgba(0,0,0,.35);
-}
-
-.card h3{
-    margin-top:0;
+        0 0 25px rgba(110,65,255,.2),
+        0 20px 60px rgba(0,0,0,.4);
 }
 
 .muted{
-    color:#9296ba;
+    color:#9297be;
 }
 
 /* =========================
@@ -430,39 +551,45 @@ main{
 }
 
 .avatar{
-    width:100px;
-    height:100px;
+    width:110px;
+    height:110px;
 
-    border-radius:50%;
-
-    margin:auto;
+    margin:
+        5px auto 20px;
 
     display:flex;
+
     align-items:center;
     justify-content:center;
 
-    font-size:35px;
-    font-weight:bold;
+    border-radius:50%;
+
+    font-size:40px;
+    font-weight:900;
 
     background:
         linear-gradient(
             135deg,
-            #6d39ff,
-            #e02bff
+            #713bff,
+            #e52cff
         );
 
     box-shadow:
-        0 0 35px rgba(150,70,255,.6);
+        0 0 35px rgba(140,60,255,.65);
 }
 
 .stat{
     padding:15px;
-    margin:8px 0;
 
-    border-radius:12px;
+    margin:9px 0;
+
+    border-radius:13px;
 
     background:
         rgba(255,255,255,.04);
+
+    border:
+        1px solid rgba(255,255,255,.05);
 }
 
 .stat b{
@@ -470,21 +597,50 @@ main{
 }
 
 /* =========================
-   RANK
+   PLAYER RANK
 ========================= */
 
-.rank{
-    border-left:
-        4px solid var(--rank);
+.player-rank{
+    padding:18px;
+
+    margin:
+        15px 0;
+
+    border-radius:16px;
+
+    border:
+        1px solid var(--rank-color);
+
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255,255,255,.04),
+            rgba(0,0,0,.15)
+        );
+
+    box-shadow:
+        0 0 25px
+        color-mix(
+            in srgb,
+            var(--rank-color) 30%,
+            transparent
+        );
 }
 
-.rank-icon{
-    font-size:40px;
-
-    color:var(--rank);
+.player-rank-icon{
+    font-size:45px;
 
     text-shadow:
-        0 0 18px var(--rank);
+        0 0 20px var(--rank-color);
+}
+
+.player-rank-name{
+    color:
+        var(--rank-color);
+
+    font-weight:900;
+
+    letter-spacing:2px;
 }
 
 /* =========================
@@ -497,10 +653,13 @@ main{
 
 table{
     width:100%;
-    border-collapse:collapse;
+
+    border-collapse:
+        collapse;
 }
 
-th,td{
+th,
+td{
     padding:14px;
 
     border-bottom:
@@ -509,14 +668,18 @@ th,td{
     text-align:left;
 }
 
+tr{
+    transition:.2s;
+}
+
 tr:hover{
     background:
-        rgba(255,255,255,.04);
+        rgba(120,80,255,.08);
 }
 
 .me{
     background:
-        rgba(116,70,255,.12);
+        rgba(116,70,255,.15);
 }
 
 /* =========================
@@ -524,8 +687,10 @@ tr:hover{
 ========================= */
 
 .auth{
-    max-width:430px;
-    margin:50px auto;
+    max-width:440px;
+
+    margin:
+        50px auto;
 }
 
 input,
@@ -534,33 +699,46 @@ select{
     width:100%;
 
     padding:13px;
-    margin:7px 0;
+
+    margin:
+        7px 0;
+
+    color:white;
+
+    outline:none;
 
     border:
         1px solid rgba(255,255,255,.12);
 
     border-radius:12px;
 
-    outline:none;
-
-    color:#fff;
-
     background:
         rgba(0,0,0,.3);
+
+    transition:.25s;
+}
+
+textarea{
+    min-height:100px;
+
+    resize:vertical;
 }
 
 input:focus,
 textarea:focus,
 select:focus{
-    border-color:#9270ff;
+    border-color:#9a78ff;
 
     box-shadow:
-        0 0 15px rgba(120,80,255,.2);
+        0 0 18px rgba(120,80,255,.25);
 }
 
-textarea{
-    min-height:100px;
-    resize:vertical;
+hr{
+    border:
+        0;
+
+    border-top:
+        1px solid rgba(255,255,255,.08);
 }
 
 /* =========================
@@ -569,44 +747,64 @@ textarea{
 
 .admin-panel{
     border:
-        1px solid rgba(200,120,255,.25);
+        1px solid rgba(190,100,255,.3);
 
     background:
-        rgba(14,8,27,.8);
+        rgba(12,7,28,.82);
 }
 
 .admin-tabs{
     display:flex;
+
     gap:8px;
 
     overflow-x:auto;
 
-    margin-bottom:18px;
+    margin-bottom:20px;
 }
 
 .admin-tab{
-    padding:11px 16px;
+    padding:11px 17px;
+
+    color:white;
+
+    border:
+        1px solid rgba(255,255,255,.1);
 
     border-radius:12px;
 
     background:
         rgba(255,255,255,.05);
+
+    cursor:pointer;
+
+    transition:.25s;
+}
+
+.admin-tab:hover{
+    border-color:#a57cff;
+
+    box-shadow:
+        0 0 20px rgba(120,70,255,.3);
 }
 
 .admin-tab.active{
     background:
         linear-gradient(
             135deg,
-            #663cff,
-            #c62dff
+            #673cff,
+            #cc2cff
         );
 
     box-shadow:
-        0 0 20px rgba(150,70,255,.35);
+        0 0 20px rgba(150,70,255,.4);
 }
 
 .admin-content{
     display:none;
+
+    animation:
+        sectionIn .3s ease;
 }
 
 .admin-content.active{
@@ -629,15 +827,21 @@ textarea{
 
 .danger{
     background:
-        rgba(255,50,80,.13);
+        rgba(255,40,80,.12);
 
     border:
-        1px solid rgba(255,50,80,.35);
+        1px solid rgba(255,40,80,.35);
 }
 
 .danger:hover{
+    border-color:#ff5677;
+
     box-shadow:
-        0 0 20px rgba(255,50,80,.3);
+        0 0 20px rgba(255,50,90,.35);
+}
+
+.success{
+    color:#72ffc0;
 }
 
 /* =========================
@@ -650,30 +854,33 @@ textarea{
     right:20px;
     bottom:20px;
 
-    z-index:9999;
+    z-index:99999;
 
     max-width:
-        min(420px,calc(100vw - 40px));
+        min(400px,90vw);
 
-    padding:15px 20px;
+    padding:
+        15px 20px;
 
     border-radius:14px;
 
     background:
-        rgba(20,20,35,.95);
+        rgba(17,17,35,.95);
 
     border:
         1px solid rgba(255,255,255,.15);
 
     box-shadow:
-        0 0 30px rgba(100,60,255,.3);
+        0 0 30px rgba(100,60,255,.35);
 
     transform:
-        translateY(120px);
+        translateY(130px);
 
     opacity:0;
 
     transition:.3s;
+
+    pointer-events:none;
 }
 
 #toast.show{
@@ -684,21 +891,29 @@ textarea{
 }
 
 /* =========================
-   LOADING
+   LOADER
 ========================= */
 
-.loading{
-    opacity:.7;
-    animation:pulse 1s infinite alternate;
+.loader{
+    display:inline-block;
+
+    width:18px;
+    height:18px;
+
+    border:
+        2px solid rgba(255,255,255,.3);
+
+    border-top-color:white;
+
+    border-radius:50%;
+
+    animation:
+        spin .7s linear infinite;
 }
 
-@keyframes pulse{
-    from{
-        opacity:.4;
-    }
-
+@keyframes spin{
     to{
-        opacity:1;
+        transform:rotate(360deg);
     }
 }
 
@@ -706,11 +921,10 @@ textarea{
    MOBILE
 ========================= */
 
-@media(max-width:700px){
+@media(max-width:800px){
 
     header{
         flex-direction:column;
-        gap:12px;
     }
 
     nav{
@@ -720,22 +934,40 @@ textarea{
     .profile{
         grid-template-columns:1fr;
     }
+}
+
+@media(max-width:500px){
 
     .hero h1{
         letter-spacing:5px;
     }
+
+    header{
+        padding:12px;
+    }
+
+    nav{
+        width:100%;
+    }
+
+    .nav-btn{
+        flex:1;
+        min-width:100px;
+    }
 }
+
 </style>
 </head>
 
 <body>
 
 <div class="space">
+    <div class="stars"></div>
+    <div class="stars2"></div>
 
-    <div class="nebula n1"></div>
-    <div class="nebula n2"></div>
-    <div class="nebula n3"></div>
-
+    <div class="nebula nebula1"></div>
+    <div class="nebula nebula2"></div>
+    <div class="nebula nebula3"></div>
 </div>
 
 <header>
@@ -755,31 +987,31 @@ textarea{
         <button
             class="nav-btn"
             onclick="showSection('profile')">
-            Профиль
+            👤 Профиль
         </button>
 
         <button
             class="nav-btn"
             onclick="showSection('ranks')">
-            Ранги
+            💎 Ранги
         </button>
 
         <button
             class="nav-btn"
             onclick="showSection('quests')">
-            Квесты
+            🚀 Квесты
         </button>
 
         <button
             class="nav-btn"
             onclick="showSection('rating')">
-            Рейтинг
+            🏆 Рейтинг
         </button>
 
         <button
             class="nav-btn"
             onclick="showSection('login')">
-            Войти
+            🔐 Войти
         </button>
 
         <button
@@ -807,9 +1039,9 @@ textarea{
         <h1>ASTRO</h1>
 
         <p>
-            Добро пожаловать в ASTRO ONLINE —
-            космическую систему рейтингов,
-            рангов, ELO и квестов.
+            Космическая система рейтингов,
+            рангов, квестов и соревнований.
+            Поднимай ELO и становись лучшим игроком.
         </p>
 
         <div class="hero-buttons">
@@ -833,11 +1065,11 @@ textarea{
     <div class="grid">
 
         <div class="card">
-            <h3>🏆 Рейтинг</h3>
+            <h3>🏆 ELO</h3>
 
             <p class="muted">
-                Поднимай ELO и становись
-                первым игроком ASTRO.
+                Поднимай рейтинг и открывай
+                новые уровни рангов.
             </p>
         </div>
 
@@ -845,8 +1077,8 @@ textarea{
             <h3>💎 Ранги</h3>
 
             <p class="muted">
-                Покупай и собирай
-                уникальные ранги.
+                Покупай эксклюзивные ранги
+                за внутриигровую валюту.
             </p>
         </div>
 
@@ -854,8 +1086,8 @@ textarea{
             <h3>🚀 Квесты</h3>
 
             <p class="muted">
-                Выполняй задания
-                и получай награды.
+                Выполняй задания и получай
+                деньги и XP.
             </p>
         </div>
 
@@ -873,22 +1105,20 @@ textarea{
 
     <div class="card auth">
 
-        <h2>🔐 Вход в ASTRO</h2>
+        <h2>🔐 Вход</h2>
 
         <p class="muted">
-            Введите данные своего аккаунта.
+            Войди в свой аккаунт ASTRO.
         </p>
 
         <input
             id="loginEmail"
             type="email"
-            autocomplete="email"
             placeholder="Email">
 
         <input
             id="loginPassword"
             type="password"
-            autocomplete="current-password"
             placeholder="Пароль">
 
         <button
@@ -897,36 +1127,30 @@ textarea{
             style="width:100%"
             onclick="login()">
 
-            Войти
+            Авторизоваться
 
         </button>
 
-        <hr
-            style="
-                border-color:rgba(255,255,255,.08);
-                margin:25px 0;
-            ">
+        <hr>
 
         <h3>Создать аккаунт</h3>
 
         <input
             id="regUsername"
-            autocomplete="username"
             placeholder="Никнейм">
 
         <input
             id="regEmail"
             type="email"
-            autocomplete="email"
             placeholder="Email">
 
         <input
             id="regPassword"
             type="password"
-            autocomplete="new-password"
             placeholder="Пароль">
 
         <button
+            id="registerButton"
             class="action-btn"
             style="width:100%"
             onclick="register()">
@@ -961,9 +1185,7 @@ textarea{
             <button
                 class="primary"
                 onclick="showSection('login')">
-
                 Войти
-
             </button>
 
         </div>
@@ -986,8 +1208,8 @@ textarea{
         id="ranksList"
         class="grid">
 
-        <div class="card loading">
-            Загрузка рангов...
+        <div class="card">
+            Загрузка...
         </div>
 
     </div>
@@ -1008,8 +1230,8 @@ textarea{
         id="questsList"
         class="grid">
 
-        <div class="card loading">
-            Загрузка квестов...
+        <div class="card">
+            Загрузка...
         </div>
 
     </div>
@@ -1069,13 +1291,11 @@ textarea{
 
     <div class="card admin-panel">
 
-        <h2>
-            ⚡ ASTRO ADMIN PANEL
-        </h2>
+        <h2>⚡ ASTRO ADMIN PANEL</h2>
 
         <p class="muted">
             Управление игроками, ELO,
-            деньгами, рангами и квестами.
+            балансом, рангами и квестами.
         </p>
 
         <div class="admin-tabs">
@@ -1108,20 +1328,16 @@ textarea{
 
             <div class="card">
 
-                <h3>
-                    Найти игрока
-                </h3>
+                <h3>👥 Игроки</h3>
 
                 <input
                     id="adminSearch"
-                    placeholder="Введите никнейм или email">
+                    placeholder="Никнейм или email">
 
                 <button
                     class="primary"
                     onclick="searchPlayers()">
-
                     Найти
-
                 </button>
 
             </div>
@@ -1138,9 +1354,7 @@ textarea{
 
             <div class="card">
 
-                <h3>
-                    ➕ Создать ранг
-                </h3>
+                <h3>➕ Создать ранг</h3>
 
                 <div class="row">
 
@@ -1200,9 +1414,7 @@ textarea{
                 <button
                     class="primary"
                     onclick="createRank()">
-
                     Создать ранг
-
                 </button>
 
             </div>
@@ -1219,9 +1431,7 @@ textarea{
 
             <div class="card">
 
-                <h3>
-                    ➕ Создать квест
-                </h3>
+                <h3>➕ Создать квест</h3>
 
                 <input
                     id="newQuestId"
@@ -1233,34 +1443,27 @@ textarea{
 
                 <textarea
                     id="newQuestDescription"
-                    placeholder="Описание квеста"></textarea>
+                    placeholder="Описание квеста">
+                </textarea>
 
                 <div class="row">
 
                     <div>
-
-                        <label>
-                            Награда
-                        </label>
+                        <label>Награда</label>
 
                         <input
                             id="newQuestReward"
                             type="number"
                             value="100">
-
                     </div>
 
                     <div>
-
-                        <label>
-                            XP
-                        </label>
+                        <label>XP</label>
 
                         <input
                             id="newQuestXp"
                             type="number"
                             value="50">
-
                     </div>
 
                 </div>
@@ -1270,9 +1473,7 @@ textarea{
                 <button
                     class="primary"
                     onclick="createQuest()">
-
                     Создать квест
-
                 </button>
 
             </div>
@@ -1291,63 +1492,164 @@ textarea{
 
 <script>
 
-/* =====================================================
-   ASTRO ONLINE
-   БЕЗ SOCKET.IO
-===================================================== */
-
-"use strict";
-
-console.log("ASTRO JS ЗАПУЩЕН");
+/* =========================================================
+   STATE
+========================================================= */
 
 let token =
-    localStorage.getItem("astro_token");
+    localStorage.getItem("astro_token") || null;
 
 let me = null;
 
-/* =========================
-   TOAST
-========================= */
+let socket = null;
 
-function toast(text){
+try{
+    socket = io();
+}catch(error){
+    console.warn("Socket.IO недоступен.");
+}
+
+/* =========================================================
+   SOCKET
+========================================================= */
+
+if(socket){
+
+    socket.on(
+        "ranks:update",
+        () => loadRanks()
+    );
+
+    socket.on(
+        "quests:update",
+        () => loadQuests()
+    );
+
+    socket.on(
+        "leaderboard:update",
+        () => loadRating()
+    );
+
+}
+
+/* =========================================================
+   TOAST
+========================================================= */
+
+function toast(message){
 
     const el =
         document.getElementById("toast");
 
-    if(!el) return;
-
-    el.textContent =
-        String(text);
+    el.textContent = message;
 
     el.classList.add("show");
 
     clearTimeout(
-        window.__toastTimer
+        toast.timer
     );
 
-    window.__toastTimer =
-        setTimeout(() => {
-
-            el.classList.remove("show");
-
-        },3000);
+    toast.timer =
+        setTimeout(
+            () => {
+                el.classList.remove("show");
+            },
+            3000
+        );
 }
 
-/* =========================
+/* =========================================================
+   ESCAPE
+========================================================= */
+
+function escapeHtml(value){
+
+    return String(value ?? "")
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+}
+
+/* =========================================================
+   API
+========================================================= */
+
+async function api(url, options = {}){
+
+    const headers = {
+        ...(options.headers || {})
+    };
+
+    if(options.body !== undefined){
+
+        headers["Content-Type"] =
+            "application/json";
+    }
+
+    if(token){
+
+        headers.Authorization =
+            "Bearer " + token;
+    }
+
+    const response =
+        await fetch(url,{
+            ...options,
+            headers
+        });
+
+    let data = {};
+
+    const text =
+        await response.text();
+
+    if(text){
+
+        try{
+            data = JSON.parse(text);
+        }catch{
+            data = {
+                error:text
+            };
+        }
+    }
+
+    if(!response.ok){
+
+        if(response.status === 401){
+
+            token = null;
+            me = null;
+
+            localStorage.removeItem(
+                "astro_token"
+            );
+        }
+
+        throw new Error(
+            data.error ||
+            "Ошибка сервера: " +
+            response.status
+        );
+    }
+
+    return data;
+}
+
+/* =========================================================
    NAVIGATION
-========================= */
+========================================================= */
 
 function showSection(id){
 
     document
         .querySelectorAll(".section")
-        .forEach(section => {
-
-            section.classList.remove(
-                "active"
-            );
-
-        });
+        .forEach(
+            section =>
+                section.classList.remove("active")
+        );
 
     const section =
         document.getElementById(id);
@@ -1363,6 +1665,10 @@ function showSection(id){
         behavior:"smooth"
     });
 
+    if(id === "profile"){
+        loadProfile();
+    }
+
     if(id === "ranks"){
         loadRanks();
     }
@@ -1374,166 +1680,45 @@ function showSection(id){
     if(id === "rating"){
         loadRating();
     }
-
-    if(id === "profile"){
-        loadProfile();
-    }
 }
 
-/* =========================
-   API
-========================= */
-
-async function api(
-    url,
-    options = {}
-){
-
-    const headers = {
-        ...(options.headers || {})
-    };
-
-    /*
-     * Content-Type только если
-     * реально отправляем JSON.
-     */
-
-    if(
-        options.body !== undefined &&
-        !(options.body instanceof FormData)
-    ){
-        headers["Content-Type"] =
-            "application/json";
-    }
-
-    if(token){
-        headers.Authorization =
-            "Bearer " + token;
-    }
-
-    console.log(
-        "API REQUEST:",
-        options.method || "GET",
-        url
-    );
-
-    const response =
-        await fetch(
-            url,
-            {
-                ...options,
-                headers
-            }
-        );
-
-    console.log(
-        "API RESPONSE:",
-        response.status,
-        url
-    );
-
-    const text =
-        await response.text();
-
-    let data = {};
-
-    if(text){
-
-        try{
-            data =
-                JSON.parse(text);
-        }
-        catch{
-            data = {
-                error:text
-            };
-        }
-    }
-
-    if(!response.ok){
-
-        throw new Error(
-            data.error ||
-            `Ошибка сервера: ${response.status}`
-        );
-    }
-
-    return data;
-}
-
-/* =========================
+/* =========================================================
    LOGIN
-========================= */
+========================================================= */
 
 async function login(){
-
-    console.log(
-        "КНОПКА ВОЙТИ НАЖАТА"
-    );
-
-    const emailInput =
-        document.getElementById(
-            "loginEmail"
-        );
-
-    const passwordInput =
-        document.getElementById(
-            "loginPassword"
-        );
-
-    if(!emailInput || !passwordInput){
-
-        toast(
-            "Ошибка формы авторизации"
-        );
-
-        return;
-    }
-
-    const email =
-        emailInput.value.trim();
-
-    const password =
-        passwordInput.value;
-
-    if(!email){
-
-        toast(
-            "Введите email"
-        );
-
-        emailInput.focus();
-
-        return;
-    }
-
-    if(!password){
-
-        toast(
-            "Введите пароль"
-        );
-
-        passwordInput.focus();
-
-        return;
-    }
 
     const button =
         document.getElementById(
             "loginButton"
         );
 
-    if(button){
-        button.disabled = true;
-        button.textContent =
-            "Вход...";
+    const email =
+        document
+            .getElementById("loginEmail")
+            .value
+            .trim();
+
+    const password =
+        document
+            .getElementById("loginPassword")
+            .value;
+
+    if(!email || !password){
+
+        toast(
+            "Введите email и пароль."
+        );
+
+        return;
     }
 
-    try{
+    button.disabled = true;
 
-        console.log(
-            "Отправляем /api/login"
-        );
+    button.innerHTML =
+        '<span class="loader"></span>';
+
+    try{
 
         const data =
             await api(
@@ -1548,23 +1733,8 @@ async function login(){
                 }
             );
 
-        console.log(
-            "LOGIN DATA:",
-            data
-        );
-
-        if(!data.token){
-
-            throw new Error(
-                "Сервер не вернул токен"
-            );
-        }
-
-        token =
-            data.token;
-
-        me =
-            data.user || null;
+        token = data.token;
+        me = data.user;
 
         localStorage.setItem(
             "astro_token",
@@ -1572,103 +1742,69 @@ async function login(){
         );
 
         toast(
-            "✅ Вход выполнен!"
-        );
-
-        showSection(
-            "profile"
+            "Авторизация успешна!"
         );
 
         await loadProfile();
 
-        await loadRating();
+        showSection("profile");
 
-    }
-    catch(error){
+    }catch(error){
 
-        console.error(
-            "LOGIN ERROR:",
-            error
-        );
+        toast(error.message);
 
-        toast(
-            error.message ||
-            "Ошибка входа"
-        );
+    }finally{
 
-    }
-    finally{
+        button.disabled = false;
 
-        if(button){
-
-            button.disabled =
-                false;
-
-            button.textContent =
-                "Войти";
-        }
+        button.textContent =
+            "Авторизоваться";
     }
 }
 
-/* =========================
+/* =========================================================
    REGISTER
-========================= */
+========================================================= */
 
 async function register(){
 
-    console.log(
-        "КНОПКА РЕГИСТРАЦИИ НАЖАТА"
-    );
+    const button =
+        document.getElementById(
+            "registerButton"
+        );
 
     const username =
         document
-            .getElementById(
-                "regUsername"
-            )
+            .getElementById("regUsername")
             .value
             .trim();
 
     const email =
         document
-            .getElementById(
-                "regEmail"
-            )
+            .getElementById("regEmail")
             .value
             .trim();
 
     const password =
         document
-            .getElementById(
-                "regPassword"
-            )
+            .getElementById("regPassword")
             .value;
 
-    if(username.length < 3){
+    if(!username ||
+       !email ||
+       !password){
 
         toast(
-            "Никнейм минимум 3 символа"
+            "Заполните все поля."
         );
 
         return;
     }
 
-    if(!email.includes("@")){
+    button.disabled = true;
 
-        toast(
-            "Введите правильный email"
-        );
-
-        return;
-    }
-
-    if(password.length < 6){
-
-        toast(
-            "Пароль минимум 6 символов"
-        );
-
-        return;
-    }
+    button.innerHTML =
+        '<span class="loader"></span>';
 
     try{
 
@@ -1686,11 +1822,8 @@ async function register(){
                 }
             );
 
-        token =
-            data.token;
-
-        me =
-            data.user;
+        token = data.token;
+        me = data.user;
 
         localStorage.setItem(
             "astro_token",
@@ -1698,32 +1831,63 @@ async function register(){
         );
 
         toast(
-            "✅ Аккаунт создан!"
+            "Аккаунт создан!"
         );
 
-        showSection(
-            "profile"
-        );
+        showSection("profile");
 
-        await loadProfile();
+        loadProfile();
 
-    }
-    catch(error){
+    }catch(error){
 
-        console.error(
-            "REGISTER ERROR:",
-            error
-        );
+        toast(error.message);
 
-        toast(
-            error.message
-        );
+    }finally{
+
+        button.disabled = false;
+
+        button.textContent =
+            "Создать аккаунт";
     }
 }
 
-/* =========================
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+async function logout(){
+
+    try{
+
+        if(token){
+
+            await api(
+                "/api/logout",
+                {
+                    method:"POST"
+                }
+            );
+        }
+
+    }catch{}
+
+    token = null;
+    me = null;
+
+    localStorage.removeItem(
+        "astro_token"
+    );
+
+    toast(
+        "Вы вышли из аккаунта."
+    );
+
+    showSection("home");
+}
+
+/* =========================================================
    PROFILE
-========================= */
+========================================================= */
 
 async function loadProfile(){
 
@@ -1738,16 +1902,13 @@ async function loadProfile(){
             <div class="card">
 
                 <p class="muted">
-                    Войдите в аккаунт,
-                    чтобы открыть профиль.
+                    Войдите в аккаунт.
                 </p>
 
                 <button
                     class="primary"
                     onclick="showSection('login')">
-
                     Войти
-
                 </button>
 
             </div>
@@ -1759,17 +1920,12 @@ async function loadProfile(){
     try{
 
         const data =
-            await api(
-                "/api/me"
-            );
+            await api("/api/me");
 
-        me =
-            data.user;
+        me = data.user;
 
         const rank =
-            getUserRank(
-                me
-            );
+            me.rank;
 
         box.innerHTML = `
 
@@ -1777,138 +1933,118 @@ async function loadProfile(){
 
                 <div class="card">
 
-                    <div
-                        class="avatar"
-                        style="
-                            background:
-                            linear-gradient(
-                                135deg,
-                                ${escapeHtml(
-                                    rank.color
-                                )},
-                                #e02bff
-                            );
-                        ">
-
+                    <div class="avatar">
                         ${escapeHtml(
-                            (
-                                me.username ||
-                                "?"
-                            )[0]
-                            .toUpperCase()
+                            me.username
+                                .charAt(0)
+                                .toUpperCase()
                         )}
-
                     </div>
 
                     <h2
-                        style="
-                            text-align:center
-                        ">
-
+                        style="text-align:center">
                         ${escapeHtml(
                             me.username
                         )}
-
                     </h2>
 
                     <p
                         class="muted"
-                        style="
-                            text-align:center
-                        ">
-
-                        ${escapeHtml(
-                            me.email
-                        )}
-
+                        style="text-align:center">
+                        ${escapeHtml(me.email)}
                     </p>
+
+                    <div
+                        class="player-rank"
+                        style="--rank-color:
+                            ${escapeHtml(rank.color)}">
+
+                        <div
+                            class="player-rank-icon">
+                            ${escapeHtml(
+                                rank.icon
+                            )}
+                        </div>
+
+                        <div
+                            class="player-rank-name">
+                            ${escapeHtml(
+                                rank.name
+                            )}
+                        </div>
+
+                        <div
+                            class="muted">
+                            ${escapeHtml(
+                                rank.title
+                            )}
+                        </div>
+
+                    </div>
 
                 </div>
 
                 <div class="card">
 
-                    <h2>
-                        ${escapeHtml(
-                            rank.icon
-                        )}
-                        ${escapeHtml(
-                            rank.name
-                        )}
-                    </h2>
-
-                    <p class="muted">
-
-                        ${escapeHtml(
-                            rank.title
-                        )}
-
-                    </p>
-
                     <div class="stat">
-
                         💰 Баланс
-
                         <b>
                             ${Number(
-                                me.balance || 0
+                                me.balance
                             ).toLocaleString()}
                             ₽
                         </b>
-
                     </div>
 
                     <div class="stat">
-
                         🏆 ELO
-
                         <b>
                             ${Number(
-                                me.elo || 0
+                                me.elo
                             ).toLocaleString()}
                         </b>
-
                     </div>
 
                     <div class="stat">
-
                         ⭐ XP
-
                         <b>
                             ${Number(
-                                me.xp || 0
+                                me.xp
                             ).toLocaleString()}
                         </b>
-
                     </div>
 
                     <div class="stat">
-
                         ⚔️ Победы
-
                         <b>
                             ${Number(
-                                me.wins || 0
+                                me.wins
                             ).toLocaleString()}
                         </b>
-
                     </div>
 
                     <div class="stat">
-
                         💎 Куплено рангов
-
                         <b>
                             ${
-                                Array.isArray(
-                                    me.ownedRanks
-                                )
-                                ?
-                                me.ownedRanks.length
-                                :
-                                0
+                                (
+                                    me.ownedRanks ||
+                                    []
+                                ).length
                             }
                         </b>
+                    </div>
 
+                    <div class="stat">
+                        🚀 Выполнено квестов
+                        <b>
+                            ${
+                                (
+                                    me.completedQuests ||
+                                    []
+                                ).length
+                            }
+                        </b>
                     </div>
 
                     <br>
@@ -1916,9 +2052,7 @@ async function loadProfile(){
                     <button
                         class="action-btn"
                         onclick="logout()">
-
                         Выйти
-
                     </button>
 
                 </div>
@@ -1926,13 +2060,7 @@ async function loadProfile(){
             </div>
         `;
 
-    }
-    catch(error){
-
-        console.error(
-            "PROFILE ERROR:",
-            error
-        );
+    }catch(error){
 
         token = null;
         me = null;
@@ -1943,7 +2071,6 @@ async function loadProfile(){
 
         box.innerHTML = `
             <div class="card">
-
                 <p>
                     Сессия закончилась.
                 </p>
@@ -1951,86 +2078,24 @@ async function loadProfile(){
                 <button
                     class="primary"
                     onclick="showSection('login')">
-
                     Войти
-
                 </button>
-
             </div>
         `;
 
         toast(
-            "Сессия закончилась"
+            "Необходимо войти снова."
         );
     }
 }
 
-/* =========================
-   USER RANK
-========================= */
-
-function getUserRank(user){
-
-    const ranks =
-        window.__ranks || [];
-
-    if(
-        user &&
-        user.rankId
-    ){
-
-        const found =
-            ranks.find(
-                rank =>
-                    rank.id ===
-                        user.rankId ||
-                    rank.rankId ===
-                        user.rankId
-            );
-
-        if(found){
-            return found;
-        }
-    }
-
-    return {
-        id:"none",
-        name:"Без ранга",
-        title:"Ранг не выбран",
-        color:"#9270ff",
-        icon:"☆"
-    };
-}
-
-/* =========================
-   LOGOUT
-========================= */
-
-function logout(){
-
-    token = null;
-    me = null;
-
-    localStorage.removeItem(
-        "astro_token"
-    );
-
-    toast(
-        "Вы вышли из аккаунта"
-    );
-
-    showSection(
-        "home"
-    );
-}
-
-/* =========================
+/* =========================================================
    RANKS
-========================= */
+========================================================= */
 
 async function loadRanks(){
 
-    const list =
+    const box =
         document.getElementById(
             "ranksList"
         );
@@ -2038,171 +2103,138 @@ async function loadRanks(){
     try{
 
         const data =
-            await api(
-                "/api/ranks"
-            );
+            await api("/api/ranks");
 
-        const ranks =
-            Array.isArray(
-                data.ranks
-            )
-            ?
-            data.ranks
-            :
-            [];
+        if(!data.ranks.length){
 
-        window.__ranks =
-            ranks;
-
-        if(!ranks.length){
-
-            list.innerHTML = `
+            box.innerHTML = `
                 <div class="card">
-                    Пока нет рангов.
+                    Рангов пока нет.
                 </div>
             `;
 
             return;
         }
 
-        list.innerHTML =
-            ranks.map(rank => {
+        box.innerHTML =
+            data.ranks
+                .map(rank => {
 
-                const owned =
-                    me &&
-                    Array.isArray(
-                        me.ownedRanks
-                    ) &&
-                    me.ownedRanks.includes(
-                        rank.id
-                    );
+                    const owned =
+                        me &&
+                        Array.isArray(
+                            me.ownedRanks
+                        ) &&
+                        me.ownedRanks.includes(
+                            rank.id
+                        );
 
-                return `
-
-                    <div
-                        class="card rank"
-                        style="
-                            --rank:
-                            ${escapeAttr(
-                                rank.color ||
-                                "#ffffff"
-                            )};
-                        ">
+                    return `
 
                         <div
-                            class="rank-icon">
+                            class="card"
+                            style="
+                                border-color:
+                                ${escapeHtml(
+                                    rank.color
+                                )};
+                            ">
 
-                            ${escapeHtml(
-                                rank.icon ||
-                                "★"
-                            )}
+                            <div
+                                style="
+                                font-size:45px;
+                                text-shadow:
+                                0 0 20px
+                                ${escapeHtml(
+                                    rank.color
+                                )};
+                                ">
+                                ${escapeHtml(
+                                    rank.icon
+                                )}
+                            </div>
 
-                        </div>
+                            <h3>
+                                ${escapeHtml(
+                                    rank.name
+                                )}
+                            </h3>
 
-                        <h3>
+                            <p
+                                class="muted">
+                                ${escapeHtml(
+                                    rank.title
+                                )}
+                            </p>
 
-                            ${escapeHtml(
-                                rank.name
-                            )}
+                            <h3>
+                                ${Number(
+                                    rank.price
+                                ).toLocaleString()}
+                                ₽
+                            </h3>
 
-                        </h3>
+                            ${
+                                owned
+                                ?
 
-                        <p class="muted">
+                                `
+                                <button
+                                    class="action-btn"
+                                    disabled>
+                                    ✓ Уже куплен
+                                </button>
+                                `
 
-                            ${escapeHtml(
-                                rank.title ||
-                                ""
-                            )}
+                                :
 
-                        </p>
-
-                        <h3>
-
-                            ${Number(
-                                rank.price || 0
-                            ).toLocaleString()}
-                            ₽
-
-                        </h3>
-
-                        ${
-                            owned
-                            ?
-                            `
-                            <button
-                                class="action-btn"
-                                disabled>
-
-                                ✅ Уже куплен
-
-                            </button>
-                            `
-                            :
-                            `
-                            <button
-                                class="action-btn"
-                                onclick="
+                                `
+                                <button
+                                    class="action-btn"
+                                    onclick="
                                     buyRank(
-                                        '${escapeAttr(
+                                        '${escapeHtml(
                                             rank.id
                                         )}'
-                                    )
-                                ">
+                                    )">
+                                    💎 Купить
+                                </button>
+                                `
+                            }
 
-                                Купить
+                        </div>
+                    `;
+                })
+                .join("");
 
-                            </button>
-                            `
-                        }
+    }catch(error){
 
-                    </div>
-                `;
-
-            }).join("");
-
-    }
-    catch(error){
-
-        console.error(
-            "RANKS ERROR:",
-            error
-        );
-
-        list.innerHTML = `
+        box.innerHTML = `
             <div class="card">
-
-                <b>
-                    Ошибка загрузки рангов
-                </b>
-
+                <b>Ошибка загрузки рангов</b>
                 <p class="muted">
-
                     ${escapeHtml(
                         error.message
                     )}
-
                 </p>
-
             </div>
         `;
     }
 }
 
-/* =========================
+/* =========================================================
    BUY RANK
-========================= */
+========================================================= */
 
 async function buyRank(id){
 
     if(!token){
 
         toast(
-            "Сначала войдите"
+            "Сначала войдите."
         );
 
-        showSection(
-            "login"
-        );
+        showSection("login");
 
         return;
     }
@@ -2219,40 +2251,28 @@ async function buyRank(id){
                 }
             );
 
-        me =
-            data.user;
+        me = data.user;
 
         toast(
-            "💎 Ранг куплен!"
+            "Ранг успешно куплен!"
         );
-
-        await loadRanks();
 
         await loadProfile();
+        await loadRanks();
 
-        await loadRating();
+    }catch(error){
 
-    }
-    catch(error){
-
-        console.error(
-            "BUY RANK ERROR:",
-            error
-        );
-
-        toast(
-            error.message
-        );
+        toast(error.message);
     }
 }
 
-/* =========================
+/* =========================================================
    QUESTS
-========================= */
+========================================================= */
 
 async function loadQuests(){
 
-    const list =
+    const box =
         document.getElementById(
             "questsList"
         );
@@ -2260,128 +2280,128 @@ async function loadQuests(){
     try{
 
         const data =
-            await api(
-                "/api/quests"
-            );
+            await api("/api/quests");
 
-        const quests =
-            Array.isArray(
-                data.quests
-            )
-            ?
-            data.quests
-            :
-            [];
+        if(!data.quests.length){
 
-        if(!quests.length){
-
-            list.innerHTML = `
+            box.innerHTML = `
                 <div class="card">
-                    Пока нет квестов.
+                    Квестов пока нет.
                 </div>
             `;
 
             return;
         }
 
-        list.innerHTML =
-            quests.map(q => `
+        box.innerHTML =
+            data.quests
+                .map(q => {
 
-                <div class="card">
+                    const completed =
+                        me &&
+                        Array.isArray(
+                            me.completedQuests
+                        ) &&
+                        me.completedQuests.includes(
+                            q.id
+                        );
 
-                    <h3>
-                        🚀
-                        ${escapeHtml(
-                            q.title
-                        )}
-                    </h3>
+                    return `
 
-                    <p class="muted">
+                        <div class="card">
 
-                        ${escapeHtml(
-                            q.description
-                        )}
+                            <h3>
+                                🚀
+                                ${escapeHtml(
+                                    q.title
+                                )}
+                            </h3>
 
-                    </p>
+                            <p class="muted">
+                                ${escapeHtml(
+                                    q.description
+                                )}
+                            </p>
 
-                    <div class="stat">
+                            <div class="stat">
+                                💰 Награда
+                                <b>
+                                    +${Number(
+                                        q.reward
+                                    ).toLocaleString()}
+                                </b>
+                            </div>
 
-                        💰 Награда
+                            <div class="stat">
+                                ⭐ XP
+                                <b>
+                                    +${Number(
+                                        q.xp
+                                    ).toLocaleString()}
+                                </b>
+                            </div>
 
-                        <b>
-                            +${Number(
-                                q.reward || 0
-                            ).toLocaleString()}
-                        </b>
+                            ${
+                                completed
+                                ?
 
-                    </div>
+                                `
+                                <button
+                                    class="action-btn"
+                                    disabled>
+                                    ✓ Выполнено
+                                </button>
+                                `
 
-                    <div class="stat">
+                                :
 
-                        ⭐ XP
+                                `
+                                <button
+                                    class="action-btn"
+                                    onclick="
+                                    claimQuest(
+                                        '${escapeHtml(
+                                            q.id
+                                        )}'
+                                    )">
+                                    Забрать награду
+                                </button>
+                                `
+                            }
 
-                        <b>
-                            +${Number(
-                                q.xp || 0
-                            ).toLocaleString()}
-                        </b>
+                        </div>
+                    `;
+                })
+                .join("");
 
-                    </div>
+    }catch(error){
 
-                    <button
-                        class="action-btn"
-                        onclick="
-                            claimQuest(
-                                '${escapeAttr(
-                                    q.id
-                                )}'
-                            )
-                        ">
-
-                        Забрать награду
-
-                    </button>
-
-                </div>
-
-            `).join("");
-
-    }
-    catch(error){
-
-        console.error(
-            "QUEST ERROR:",
-            error
-        );
-
-        list.innerHTML = `
+        box.innerHTML = `
             <div class="card">
-
-                Ошибка:
-                ${escapeHtml(
-                    error.message
-                )}
-
+                <b>Ошибка загрузки квестов</b>
+                <p class="muted">
+                    ${escapeHtml(
+                        error.message
+                    )}
+                </p>
             </div>
         `;
     }
 }
 
-/* =========================
+/* =========================================================
    CLAIM QUEST
-========================= */
+========================================================= */
 
 async function claimQuest(id){
 
     if(!token){
 
         toast(
-            "Сначала войдите"
+            "Сначала войдите."
         );
 
-        showSection(
-            "login"
-        );
+        showSection("login");
 
         return;
     }
@@ -2398,32 +2418,32 @@ async function claimQuest(id){
                 }
             );
 
-        me =
-            data.user;
+        me = data.user;
 
         toast(
-            "🚀 Награда получена!"
+            "Получено +" +
+            Number(
+                data.reward
+            ).toLocaleString() +
+            " ₽ и +" +
+            Number(
+                data.xp
+            ).toLocaleString() +
+            " XP!"
         );
 
-        await loadProfile();
+        loadProfile();
+        loadQuests();
 
-    }
-    catch(error){
+    }catch(error){
 
-        console.error(
-            "CLAIM QUEST ERROR:",
-            error
-        );
-
-        toast(
-            error.message
-        );
+        toast(error.message);
     }
 }
 
-/* =========================
+/* =========================================================
    RATING
-========================= */
+========================================================= */
 
 async function loadRating(){
 
@@ -2439,21 +2459,12 @@ async function loadRating(){
                 "/api/leaderboard"
             );
 
-        const players =
-            Array.isArray(
-                data.players
-            )
-            ?
-            data.players
-            :
-            [];
-
-        if(!players.length){
+        if(!data.players.length){
 
             body.innerHTML = `
                 <tr>
                     <td colspan="6">
-                        Пока нет игроков.
+                        Игроков пока нет.
                     </td>
                 </tr>
             `;
@@ -2462,196 +2473,147 @@ async function loadRating(){
         }
 
         body.innerHTML =
-            players.map(
-                (p,index) => {
+            data.players
+                .map((player,index) => {
 
                     const rank =
-                        getUserRank(
-                            p
-                        );
+                        player.rank;
 
                     return `
 
                         <tr
-                            class="
-                            ${
+                            class="${
                                 me &&
-                                me.id === p.id
-                                ?
-                                "me"
-                                :
-                                ""
-                            }
-                            ">
+                                me.id ===
+                                player.id
+                                ? "me"
+                                : ""
+                            }">
 
                             <td>
-
                                 ${
                                     index === 0
-                                    ?
-                                    "👑"
-                                    :
-                                    index + 1
+                                    ? "👑"
+                                    : index + 1
                                 }
-
                             </td>
 
                             <td>
-
                                 <b>
                                     ${escapeHtml(
-                                        p.username
+                                        player.username
                                     )}
                                 </b>
-
-                            </td>
-
-                            <td
-                                style="
-                                    color:
-                                    ${escapeAttr(
-                                        rank.color
-                                    )};
-
-                                    text-shadow:
-                                    0 0 10px
-                                    ${escapeAttr(
-                                        rank.color
-                                    )};
-                                ">
-
-                                ${escapeHtml(
-                                    rank.icon
-                                )}
-
-                                ${escapeHtml(
-                                    rank.name
-                                )}
-
                             </td>
 
                             <td>
+                                <span
+                                    style="
+                                    color:
+                                    ${escapeHtml(
+                                        rank.color
+                                    )};
+                                    font-weight:900;
+                                    ">
 
+                                    ${escapeHtml(
+                                        rank.icon
+                                    )}
+
+                                    ${escapeHtml(
+                                        rank.name
+                                    )}
+
+                                </span>
+                            </td>
+
+                            <td>
                                 <b>
                                     ${Number(
-                                        p.elo || 0
+                                        player.elo
                                     ).toLocaleString()}
                                 </b>
-
                             </td>
 
                             <td>
-
                                 ${Number(
-                                    p.xp || 0
+                                    player.xp
                                 ).toLocaleString()}
-
                             </td>
 
                             <td>
-
                                 ${Number(
-                                    p.wins || 0
+                                    player.wins
                                 ).toLocaleString()}
-
                             </td>
 
                         </tr>
                     `;
-                }
-            ).join("");
+                })
+                .join("");
 
-    }
-    catch(error){
-
-        console.error(
-            "RATING ERROR:",
-            error
-        );
+    }catch(error){
 
         body.innerHTML = `
             <tr>
                 <td colspan="6">
-
                     Ошибка рейтинга:
                     ${escapeHtml(
                         error.message
                     )}
-
                 </td>
             </tr>
         `;
     }
 }
 
-/* =========================
+/* =========================================================
    ADMIN
-========================= */
+========================================================= */
 
 function showAdmin(){
 
     if(!token){
 
         toast(
-            "Сначала войдите в аккаунт"
+            "Сначала войдите."
         );
 
-        showSection(
-            "login"
-        );
+        showSection("login");
 
         return;
     }
 
-    showSection(
-        "admin"
-    );
+    showSection("admin");
 
     loadAdmin();
 }
 
-function adminTab(
-    id,
-    button
-){
+function adminTab(id,button){
 
     document
-        .querySelectorAll(
-            ".admin-content"
-        )
+        .querySelectorAll(".admin-content")
         .forEach(
-            content =>
-                content.classList.remove(
-                    "active"
-                )
+            x =>
+                x.classList.remove("active")
         );
 
     document
-        .querySelectorAll(
-            ".admin-tab"
-        )
+        .querySelectorAll(".admin-tab")
         .forEach(
-            tab =>
-                tab.classList.remove(
-                    "active"
-                )
+            x =>
+                x.classList.remove("active")
         );
 
     const content =
-        document.getElementById(
-            id
-        );
+        document.getElementById(id);
 
     if(content){
-        content.classList.add(
-            "active"
-        );
+        content.classList.add("active");
     }
 
     if(button){
-        button.classList.add(
-            "active"
-        );
+        button.classList.add("active");
     }
 }
 
@@ -2659,90 +2621,84 @@ async function loadAdmin(){
 
     try{
 
-        const ranks =
+        await searchPlayers();
+
+    }catch{}
+
+    try{
+
+        const data =
             await api(
                 "/api/admin/ranks"
             );
 
         renderAdminRanks(
-            ranks.ranks || []
+            data.ranks || []
         );
 
-    }
-    catch(error){
+    }catch(error){
 
-        console.error(
-            "ADMIN RANKS ERROR:",
-            error
-        );
-
-        toast(
-            error.message
-        );
-
-        return;
+        document.getElementById(
+            "adminRanks"
+        ).innerHTML = `
+            <div class="card">
+                ${escapeHtml(
+                    error.message
+                )}
+            </div>
+        `;
     }
 
     try{
 
-        const quests =
+        const data =
             await api(
                 "/api/admin/quests"
             );
 
         renderAdminQuests(
-            quests.quests || []
+            data.quests || []
         );
 
-    }
-    catch(error){
+    }catch(error){
 
-        console.error(
-            "ADMIN QUEST ERROR:",
-            error
-        );
+        document.getElementById(
+            "adminQuests"
+        ).innerHTML = `
+            <div class="card">
+                ${escapeHtml(
+                    error.message
+                )}
+            </div>
+        `;
     }
-
-    await searchPlayers();
 }
 
-/* =========================
+/* =========================================================
    ADMIN PLAYERS
-========================= */
+========================================================= */
 
 async function searchPlayers(){
 
+    const box =
+        document.getElementById(
+            "adminPlayers"
+        );
+
     try{
 
-        const input =
+        const search =
             document.getElementById(
                 "adminSearch"
-            );
-
-        const search =
-            input
-            ?
-            input.value.trim()
-            :
-            "";
+            ).value.trim();
 
         const data =
             await api(
                 "/api/admin/users?search=" +
-                encodeURIComponent(
-                    search
-                )
+                encodeURIComponent(search)
             );
 
-        const box =
-            document.getElementById(
-                "adminPlayers"
-            );
-
-        if(
-            !data.users ||
-            !data.users.length
-        ){
+        if(!data.users.length){
 
             box.innerHTML = `
                 <div class="card">
@@ -2754,26 +2710,22 @@ async function searchPlayers(){
         }
 
         box.innerHTML =
-            data.users.map(
-                u => `
+            data.users
+                .map(user => `
 
                     <div class="card">
 
                         <h3>
-
                             👤
                             ${escapeHtml(
-                                u.username
+                                user.username
                             )}
-
                         </h3>
 
                         <p class="muted">
-
                             ${escapeHtml(
-                                u.email
+                                user.email
                             )}
-
                         </p>
 
                         <div class="row">
@@ -2785,46 +2737,10 @@ async function searchPlayers(){
                                 </label>
 
                                 <input
-                                    id="elo_${escapeAttr(
-                                        u.id
-                                    )}"
+                                    id="elo_${user.id}"
                                     type="number"
                                     value="${Number(
-                                        u.elo || 0
-                                    )}">
-
-                            </div>
-
-                            <div>
-
-                                <label>
-                                    Победы
-                                </label>
-
-                                <input
-                                    id="wins_${escapeAttr(
-                                        u.id
-                                    )}"
-                                    type="number"
-                                    value="${Number(
-                                        u.wins || 0
-                                    )}">
-
-                            </div>
-
-                            <div>
-
-                                <label>
-                                    Баланс
-                                </label>
-
-                                <input
-                                    id="balance_${escapeAttr(
-                                        u.id
-                                    )}"
-                                    type="number"
-                                    value="${Number(
-                                        u.balance || 0
+                                        user.elo
                                     )}">
 
                             </div>
@@ -2836,12 +2752,40 @@ async function searchPlayers(){
                                 </label>
 
                                 <input
-                                    id="xp_${escapeAttr(
-                                        u.id
-                                    )}"
+                                    id="xp_${user.id}"
                                     type="number"
                                     value="${Number(
-                                        u.xp || 0
+                                        user.xp
+                                    )}">
+
+                            </div>
+
+                            <div>
+
+                                <label>
+                                    Победы
+                                </label>
+
+                                <input
+                                    id="wins_${user.id}"
+                                    type="number"
+                                    value="${Number(
+                                        user.wins
+                                    )}">
+
+                            </div>
+
+                            <div>
+
+                                <label>
+                                    Баланс
+                                </label>
+
+                                <input
+                                    id="balance_${user.id}"
+                                    type="number"
+                                    value="${Number(
+                                        user.balance
                                     )}">
 
                             </div>
@@ -2853,32 +2797,23 @@ async function searchPlayers(){
                         <button
                             class="primary"
                             onclick="
-                                savePlayer(
-                                    '${escapeAttr(
-                                        u.id
-                                    )}'
-                                )
-                            ">
+                            savePlayer(
+                                '${escapeHtml(
+                                    user.id
+                                )}'
+                            )">
 
                             💾 Сохранить
 
                         </button>
 
                     </div>
-                `
-            ).join("");
+                `)
+                .join("");
 
-    }
-    catch(error){
+    }catch(error){
 
-        console.error(
-            "ADMIN USERS ERROR:",
-            error
-        );
-
-        document.getElementById(
-            "adminPlayers"
-        ).innerHTML = `
+        box.innerHTML = `
             <div class="card">
 
                 <b>
@@ -2886,11 +2821,9 @@ async function searchPlayers(){
                 </b>
 
                 <p class="muted">
-
                     ${escapeHtml(
                         error.message
                     )}
-
                 </p>
 
             </div>
@@ -2898,41 +2831,13 @@ async function searchPlayers(){
     }
 }
 
-/* =========================
+/* =========================================================
    SAVE PLAYER
-========================= */
+========================================================= */
 
 async function savePlayer(id){
 
     try{
-
-        const elo =
-            Number(
-                document.getElementById(
-                    "elo_" + id
-                ).value
-            );
-
-        const wins =
-            Number(
-                document.getElementById(
-                    "wins_" + id
-                ).value
-            );
-
-        const balance =
-            Number(
-                document.getElementById(
-                    "balance_" + id
-                ).value
-            );
-
-        const xp =
-            Number(
-                document.getElementById(
-                    "xp_" + id
-                ).value
-            );
 
         await api(
             "/api/admin/users/" +
@@ -2941,29 +2846,48 @@ async function savePlayer(id){
                 method:"PUT",
 
                 body:JSON.stringify({
-                    elo,
-                    wins,
-                    balance,
-                    xp
+
+                    elo:Number(
+                        document.getElementById(
+                            "elo_" + id
+                        ).value
+                    ),
+
+                    xp:Number(
+                        document.getElementById(
+                            "xp_" + id
+                        ).value
+                    ),
+
+                    wins:Number(
+                        document.getElementById(
+                            "wins_" + id
+                        ).value
+                    ),
+
+                    balance:Number(
+                        document.getElementById(
+                            "balance_" + id
+                        ).value
+                    )
+
                 })
             }
         );
 
         toast(
-            "✅ Игрок сохранён!"
+            "Игрок сохранён!"
         );
 
-        await loadRating();
+        if(me && me.id === id){
+
+            await loadProfile();
+        }
 
         await searchPlayers();
+        await loadRating();
 
-    }
-    catch(error){
-
-        console.error(
-            "SAVE PLAYER ERROR:",
-            error
-        );
+    }catch(error){
 
         toast(
             error.message
@@ -2971,13 +2895,11 @@ async function savePlayer(id){
     }
 }
 
-/* =========================
+/* =========================================================
    ADMIN RANKS
-========================= */
+========================================================= */
 
-function renderAdminRanks(
-    ranks
-){
+function renderAdminRanks(ranks){
 
     const box =
         document.getElementById(
@@ -2988,7 +2910,7 @@ function renderAdminRanks(
 
         box.innerHTML = `
             <div class="card">
-                Рангов пока нет.
+                Рангов нет.
             </div>
         `;
 
@@ -2996,108 +2918,55 @@ function renderAdminRanks(
     }
 
     box.innerHTML =
-        ranks.map(
-            r => `
+        ranks
+            .map(rank => `
 
                 <div class="card">
 
                     <h3>
-
                         ${escapeHtml(
-                            r.icon || "★"
+                            rank.icon
                         )}
-
                         ${escapeHtml(
-                            r.name
+                            rank.name
                         )}
-
                     </h3>
 
                     <p class="muted">
-
                         ${escapeHtml(
-                            r.title || ""
+                            rank.title
                         )}
-
                     </p>
 
                     <p>
-
                         💰
                         ${Number(
-                            r.price || 0
+                            rank.price
                         ).toLocaleString()}
                         ₽
-
                     </p>
 
                     <button
                         class="action-btn danger"
                         onclick="
-                            deleteRank(
-                                '${escapeAttr(
-                                    r.id
-                                )}'
-                            )
-                        ">
+                        deleteRank(
+                            '${escapeHtml(
+                                rank.id
+                            )}'
+                        )">
 
                         🗑 Удалить
 
                     </button>
 
                 </div>
-            `
-        ).join("");
+            `)
+            .join("");
 }
-
-/* =========================
-   CREATE RANK
-========================= */
 
 async function createRank(){
 
     try{
-
-        const rankId =
-            document.getElementById(
-                "newRankId"
-            ).value.trim();
-
-        const name =
-            document.getElementById(
-                "newRankName"
-            ).value.trim();
-
-        const title =
-            document.getElementById(
-                "newRankTitle"
-            ).value.trim();
-
-        const price =
-            Number(
-                document.getElementById(
-                    "newRankPrice"
-                ).value
-            );
-
-        const color =
-            document.getElementById(
-                "newRankColor"
-            ).value.trim();
-
-        const icon =
-            document.getElementById(
-                "newRankIcon"
-            ).value.trim();
-
-        if(!rankId || !name){
-
-            toast(
-                "Заполните ID и название"
-            );
-
-            return;
-        }
 
         await api(
             "/api/admin/ranks",
@@ -3105,43 +2974,61 @@ async function createRank(){
                 method:"POST",
 
                 body:JSON.stringify({
-                    rankId,
-                    name,
-                    title,
-                    price,
-                    color,
-                    icon
+
+                    rankId:
+                        document
+                            .getElementById(
+                                "newRankId"
+                            )
+                            .value,
+
+                    name:
+                        document
+                            .getElementById(
+                                "newRankName"
+                            )
+                            .value,
+
+                    title:
+                        document
+                            .getElementById(
+                                "newRankTitle"
+                            )
+                            .value,
+
+                    price:Number(
+                        document
+                            .getElementById(
+                                "newRankPrice"
+                            )
+                            .value
+                    ),
+
+                    color:
+                        document
+                            .getElementById(
+                                "newRankColor"
+                            )
+                            .value,
+
+                    icon:
+                        document
+                            .getElementById(
+                                "newRankIcon"
+                            )
+                            .value
                 })
             }
         );
 
         toast(
-            "💎 Ранг создан!"
+            "Ранг создан!"
         );
 
-        document.getElementById(
-            "newRankId"
-        ).value = "";
+        loadRanks();
+        loadAdmin();
 
-        document.getElementById(
-            "newRankName"
-        ).value = "";
-
-        document.getElementById(
-            "newRankTitle"
-        ).value = "";
-
-        await loadRanks();
-
-        await loadAdmin();
-
-    }
-    catch(error){
-
-        console.error(
-            "CREATE RANK ERROR:",
-            error
-        );
+    }catch(error){
 
         toast(
             error.message
@@ -3149,17 +3036,11 @@ async function createRank(){
     }
 }
 
-/* =========================
-   DELETE RANK
-========================= */
-
 async function deleteRank(id){
 
-    if(
-        !confirm(
-            "Удалить этот ранг?"
-        )
-    ){
+    if(!confirm(
+        "Удалить этот ранг?"
+    )){
         return;
     }
 
@@ -3174,20 +3055,13 @@ async function deleteRank(id){
         );
 
         toast(
-            "Ранг удалён"
+            "Ранг удалён!"
         );
 
-        await loadRanks();
+        loadRanks();
+        loadAdmin();
 
-        await loadAdmin();
-
-    }
-    catch(error){
-
-        console.error(
-            "DELETE RANK ERROR:",
-            error
-        );
+    }catch(error){
 
         toast(
             error.message
@@ -3195,13 +3069,11 @@ async function deleteRank(id){
     }
 }
 
-/* =========================
+/* =========================================================
    ADMIN QUESTS
-========================= */
+========================================================= */
 
-function renderAdminQuests(
-    quests
-){
+function renderAdminQuests(quests){
 
     const box =
         document.getElementById(
@@ -3212,7 +3084,7 @@ function renderAdminQuests(
 
         box.innerHTML = `
             <div class="card">
-                Квестов пока нет.
+                Квестов нет.
             </div>
         `;
 
@@ -3220,109 +3092,58 @@ function renderAdminQuests(
     }
 
     box.innerHTML =
-        quests.map(
-            q => `
+        quests
+            .map(q => `
 
                 <div class="card">
 
                     <h3>
-
                         🚀
                         ${escapeHtml(
                             q.title
                         )}
-
                     </h3>
 
                     <p class="muted">
-
                         ${escapeHtml(
                             q.description
                         )}
-
                     </p>
 
                     <p>
-
                         💰
                         ${Number(
-                            q.reward || 0
+                            q.reward
                         ).toLocaleString()}
-
                         ·
-
                         ⭐
                         ${Number(
-                            q.xp || 0
+                            q.xp
                         ).toLocaleString()}
                         XP
-
                     </p>
 
                     <button
                         class="action-btn danger"
                         onclick="
-                            deleteQuest(
-                                '${escapeAttr(
-                                    q.id
-                                )}'
-                            )
-                        ">
+                        deleteQuest(
+                            '${escapeHtml(
+                                q.id
+                            )}'
+                        )">
 
                         🗑 Удалить
 
                     </button>
 
                 </div>
-            `
-        ).join("");
+            `)
+            .join("");
 }
-
-/* =========================
-   CREATE QUEST
-========================= */
 
 async function createQuest(){
 
     try{
-
-        const questId =
-            document.getElementById(
-                "newQuestId"
-            ).value.trim();
-
-        const title =
-            document.getElementById(
-                "newQuestTitle"
-            ).value.trim();
-
-        const description =
-            document.getElementById(
-                "newQuestDescription"
-            ).value.trim();
-
-        const reward =
-            Number(
-                document.getElementById(
-                    "newQuestReward"
-                ).value
-            );
-
-        const xp =
-            Number(
-                document.getElementById(
-                    "newQuestXp"
-                ).value
-            );
-
-        if(!questId || !title){
-
-            toast(
-                "Заполните ID и название"
-            );
-
-            return;
-        }
 
         await api(
             "/api/admin/quests",
@@ -3330,30 +3151,56 @@ async function createQuest(){
                 method:"POST",
 
                 body:JSON.stringify({
-                    questId,
-                    title,
-                    description,
-                    reward,
-                    xp
+
+                    questId:
+                        document
+                            .getElementById(
+                                "newQuestId"
+                            )
+                            .value,
+
+                    title:
+                        document
+                            .getElementById(
+                                "newQuestTitle"
+                            )
+                            .value,
+
+                    description:
+                        document
+                            .getElementById(
+                                "newQuestDescription"
+                            )
+                            .value,
+
+                    reward:Number(
+                        document
+                            .getElementById(
+                                "newQuestReward"
+                            )
+                            .value
+                    ),
+
+                    xp:Number(
+                        document
+                            .getElementById(
+                                "newQuestXp"
+                            )
+                            .value
+                    )
+
                 })
             }
         );
 
         toast(
-            "🚀 Квест создан!"
+            "Квест создан!"
         );
 
-        await loadQuests();
+        loadQuests();
+        loadAdmin();
 
-        await loadAdmin();
-
-    }
-    catch(error){
-
-        console.error(
-            "CREATE QUEST ERROR:",
-            error
-        );
+    }catch(error){
 
         toast(
             error.message
@@ -3361,17 +3208,11 @@ async function createQuest(){
     }
 }
 
-/* =========================
-   DELETE QUEST
-========================= */
-
 async function deleteQuest(id){
 
-    if(
-        !confirm(
-            "Удалить этот квест?"
-        )
-    ){
+    if(!confirm(
+        "Удалить этот квест?"
+    )){
         return;
     }
 
@@ -3386,20 +3227,13 @@ async function deleteQuest(id){
         );
 
         toast(
-            "Квест удалён"
+            "Квест удалён!"
         );
 
-        await loadQuests();
+        loadQuests();
+        loadAdmin();
 
-        await loadAdmin();
-
-    }
-    catch(error){
-
-        console.error(
-            "DELETE QUEST ERROR:",
-            error
-        );
+    }catch(error){
 
         toast(
             error.message
@@ -3407,125 +3241,33 @@ async function deleteQuest(id){
     }
 }
 
-/* =========================
-   SECURITY
-========================= */
+/* =========================================================
+   INITIALIZATION
+========================================================= */
 
-function escapeHtml(value){
-
-    return String(
-        value ?? ""
-    )
-    .replaceAll(
-        "&",
-        "&amp;"
-    )
-    .replaceAll(
-        "<",
-        "&lt;"
-    )
-    .replaceAll(
-        ">",
-        "&gt;"
-    )
-    .replaceAll(
-        '"',
-        "&quot;"
-    )
-    .replaceAll(
-        "'",
-        "&#039;"
-    );
-}
-
-function escapeAttr(value){
-
-    return String(
-        value ?? ""
-    )
-    .replaceAll(
-        "\\",
-        "\\\\"
-    )
-    .replaceAll(
-        "'",
-        "\\'"
-    );
-}
-
-/* =========================
-   ENTER KEY
-========================= */
-
-document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-
-        const password =
-            document.getElementById(
-                "loginPassword"
-            );
-
-        if(password){
-
-            password.addEventListener(
-                "keydown",
-                event => {
-
-                    if(
-                        event.key ===
-                        "Enter"
-                    ){
-
-                        event.preventDefault();
-
-                        login();
-                    }
-
-                }
-            );
-        }
-
-        console.log(
-            "ASTRO DOM ГОТОВ"
-        );
-    }
-);
-
-/* =========================
-   START
-========================= */
-
-(async function(){
-
-    console.log(
-        "ASTRO START"
-    );
+async function init(){
 
     try{
 
         await loadRanks();
-
         await loadQuests();
-
         await loadRating();
 
         if(token){
 
             await loadProfile();
-
         }
 
-    }
-    catch(error){
+    }catch(error){
 
         console.error(
-            "START ERROR:",
+            "INIT ERROR:",
             error
         );
     }
+}
 
-})();
+init();
 
 </script>
 

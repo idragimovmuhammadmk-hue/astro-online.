@@ -1,134 +1,71 @@
-// Новый server.js
-
-```js
-"use strict";
-
+const express = require("express");
 const http = require("http");
-const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
-const { URL } = require("url");
+const { Pool } = require("pg");
+const { Server } = require("socket.io");
 
-const PORT = Number(process.env.PORT) || 3000;
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
 
-const HOST = "0.0.0.0";
+app.use(express.json({ limit: "1mb" }));
+app.use(express.urlencoded({ extended: true }));
 
-/*
-========================================================
- ASTRO ONLINE
- SERVER WITHOUT EXPRESS / SOCKET.IO / DATABASE
-========================================================
+const PORT = Number(process.env.PORT || 10000);
+const DATABASE_URL = process.env.DATABASE_URL;
 
- Запуск:
-
-   node server.js
-
- Потом открыть:
-
-   http://localhost:3000
-
- Никаких npm install не требуется.
- Никакого data.json не требуется.
-*/
-
-/* ======================================================
-   IN-MEMORY DATABASE
-====================================================== */
-
-const users = new Map();
-const ranks = new Map();
-const quests = new Map();
-const sessions = new Map();
-
-/* ======================================================
-   ADMIN
-====================================================== */
-
-const ADMIN_EMAIL = "admin@astro.local";
-const ADMIN_PASSWORD = "admin123";
-
-/* ======================================================
-   HELPERS
-====================================================== */
-
-function id() {
-    return crypto.randomUUID();
+if (!DATABASE_URL) {
+    console.error("FATAL SERVER ERROR: DATABASE_URL не задан.");
+    process.exit(1);
 }
 
-function hashPassword(password) {
+const pool = new Pool({
+    connectionString: DATABASE_URL,
+    ssl: {
+        rejectUnauthorized: false
+    },
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000
+});
+
+function randomToken() {
+    return crypto.randomBytes(48).toString("hex");
+}
+
+function hashPassword(password, salt) {
     return crypto
         .createHash("sha256")
-        .update(String(password))
+        .update(String(salt) + ":" + String(password))
         .digest("hex");
 }
 
-function createToken() {
-    return crypto.randomBytes(32).toString("hex");
+function createPassword(password) {
+    const salt = crypto.randomBytes(24).toString("hex");
+    const hash = hashPassword(password, salt);
+
+    return {
+        salt,
+        hash
+    };
 }
 
-function json(res, status, data) {
-    const body = JSON.stringify(data);
+function checkPassword(password, salt, hash) {
+    const calculated = hashPassword(password, salt);
 
-    res.writeHead(status, {
-        "Content-Type": "application/json; charset=utf-8",
-        "Content-Length": Buffer.byteLength(body),
-        "Cache-Control": "no-store",
-        "Access-Control-Allow-Origin": "*"
-    });
+    const a = Buffer.from(calculated, "hex");
+    const b = Buffer.from(String(hash), "hex");
 
-    res.end(body);
+    if (a.length !== b.length) {
+        return false;
+    }
+
+    return crypto.timingSafeEqual(a, b);
 }
 
-function text(res, status, body, contentType = "text/plain; charset=utf-8") {
-    res.writeHead(status, {
-        "Content-Type": contentType,
-        "Content-Length": Buffer.byteLength(body),
-        "Cache-Control": "no-store"
-    });
-
-    res.end(body);
-}
-
-function error(res, status, message) {
-    return json(res, status, {
-        error: message
-    });
-}
-
-function getBody(req) {
-    return new Promise((resolve, reject) => {
-        let body = "";
-
-        req.on("data", chunk => {
-            body += chunk;
-
-            if (body.length > 2 * 1024 * 1024) {
-                reject(new Error("Слишком большой запрос"));
-                req.destroy();
-            }
-        });
-
-        req.on("end", () => {
-            if (!body) {
-                resolve({});
-                return;
-            }
-
-            try {
-                resolve(JSON.parse(body));
-            } catch {
-                reject(new Error("Неверный JSON"));
-            }
-        });
-
-        req.on("error", reject);
-    });
-}
-
-function cleanString(value, max = 100) {
-    return String(value ?? "")
-        .trim()
-        .slice(0, max);
+function clean(value) {
+    return String(value == null ? "" : value).trim();
 }
 
 function number(value, fallback = 0) {
@@ -141,1083 +78,1819 @@ function number(value, fallback = 0) {
     return n;
 }
 
-function publicUser(user) {
-    return {
-        id: user.id,
-        username: user.username,
-        email: user.email,
-        balance: user.balance,
-        elo: user.elo,
-        xp: user.xp,
-        wins: user.wins,
-        rankId: user.rankId,
-        ownedRanks: [...user.ownedRanks],
-        claimedQuests: [...user.claimedQuests],
-        isAdmin: user.isAdmin
-    };
-}
+function integer(value, fallback = 0) {
+    const n = Math.trunc(Number(value));
 
-function publicRank(rank) {
-    return {
-        id: rank.id,
-        rankId: rank.rankId,
-        name: rank.name,
-        title: rank.title,
-        price: rank.price,
-        color: rank.color,
-        icon: rank.icon
-    };
-}
-
-function publicQuest(quest) {
-    return {
-        id: quest.id,
-        questId: quest.questId,
-        title: quest.title,
-        description: quest.description,
-        reward: quest.reward,
-        xp: quest.xp
-    };
-}
-
-/* ======================================================
-   DEFAULT DATA
-====================================================== */
-
-function createDefaultData() {
-
-    const admin = {
-        id: id(),
-        username: "Admin",
-        email: ADMIN_EMAIL,
-        password: hashPassword(ADMIN_PASSWORD),
-
-        balance: 999999999,
-        elo: 9999,
-        xp: 999999,
-        wins: 999,
-
-        rankId: "admin",
-        ownedRanks: ["admin"],
-
-        claimedQuests: [],
-
-        isAdmin: true
-    };
-
-    users.set(admin.id, admin);
-
-    const defaultRanks = [
-        {
-            id: id(),
-            rankId: "bronze",
-            name: "BRONZE",
-            title: "Бронзовый",
-            price: 500,
-            color: "#cd7f32",
-            icon: "🥉"
-        },
-        {
-            id: id(),
-            rankId: "silver",
-            name: "SILVER",
-            title: "Серебряный",
-            price: 1500,
-            color: "#c0c0c0",
-            icon: "🥈"
-        },
-        {
-            id: id(),
-            rankId: "gold",
-            name: "GOLD",
-            title: "Золотой",
-            price: 5000,
-            color: "#ffd700",
-            icon: "🥇"
-        },
-        {
-            id: id(),
-            rankId: "diamond",
-            name: "DIAMOND",
-            title: "Алмазный",
-            price: 15000,
-            color: "#55ddff",
-            icon: "💎"
-        },
-        {
-            id: id(),
-            rankId: "legend",
-            name: "LEGEND",
-            title: "Легендарный",
-            price: 50000,
-            color: "#ff4fd8",
-            icon: "👑"
-        }
-    ];
-
-    for (const rank of defaultRanks) {
-        ranks.set(rank.rankId, rank);
+    if (!Number.isFinite(n)) {
+        return fallback;
     }
 
-    const defaultQuests = [
-        {
-            id: id(),
-            questId: "first-win",
-            title: "Первая победа",
-            description: "Получите свою первую победу.",
-            reward: 500,
-            xp: 100
-        },
-        {
-            id: id(),
-            questId: "elo-hunter",
-            title: "Охотник за ELO",
-            description: "Поднимите свой рейтинг.",
-            reward: 1000,
-            xp: 250
-        }
-    ];
-
-    for (const quest of defaultQuests) {
-        quests.set(quest.questId, quest);
-    }
+    return n;
 }
 
-createDefaultData();
-
-/* ======================================================
-   AUTH
-====================================================== */
-
-function getToken(req) {
-
-    const header = req.headers.authorization || "";
-
-    if (!header.startsWith("Bearer ")) {
+function publicUser(row) {
+    if (!row) {
         return null;
     }
 
-    return header.slice(7).trim() || null;
+    return {
+        id: String(row.id),
+        username: row.username,
+        email: row.email,
+        balance: Number(row.balance || 0),
+        elo: Number(row.elo || 0),
+        xp: Number(row.xp || 0),
+        wins: Number(row.wins || 0),
+        rankId: row.rank_id ? String(row.rank_id) : null,
+        rankName: row.rank_name || null,
+        rankTitle: row.rank_title || null,
+        rankColor: row.rank_color || null,
+        rankIcon: row.rank_icon || null,
+        ownedRanks: Array.isArray(row.owned_ranks)
+            ? row.owned_ranks.map(String)
+            : [],
+        createdAt: row.created_at
+    };
 }
 
-function getUser(req) {
+function publicRank(row) {
+    return {
+        id: String(row.id),
+        rankId: row.rank_id,
+        name: row.name,
+        title: row.title,
+        price: Number(row.price || 0),
+        color: row.color || "#9b7cff",
+        icon: row.icon || "★"
+    };
+}
 
-    const token = getToken(req);
+function publicQuest(row) {
+    return {
+        id: String(row.id),
+        questId: row.quest_id,
+        title: row.title,
+        description: row.description,
+        reward: Number(row.reward || 0),
+        xp: Number(row.xp || 0),
+        active: Boolean(row.active)
+    };
+}
 
+async function query(text, params = []) {
+    return pool.query(text, params);
+}
+
+async function getUserById(id) {
+    const result = await query(
+        `
+        SELECT
+            u.*,
+            r.name AS rank_name,
+            r.title AS rank_title,
+            r.color AS rank_color,
+            r.icon AS rank_icon
+        FROM users u
+        LEFT JOIN ranks r ON r.id = u.rank_id
+        WHERE u.id = $1
+        LIMIT 1
+        `,
+        [id]
+    );
+
+    return result.rows[0] || null;
+}
+
+async function getUserByEmail(email) {
+    const result = await query(
+        `
+        SELECT
+            u.*,
+            r.name AS rank_name,
+            r.title AS rank_title,
+            r.color AS rank_color,
+            r.icon AS rank_icon
+        FROM users u
+        LEFT JOIN ranks r ON r.id = u.rank_id
+        WHERE LOWER(u.email) = LOWER($1)
+        LIMIT 1
+        `,
+        [email]
+    );
+
+    return result.rows[0] || null;
+}
+
+async function getUserByUsername(username) {
+    const result = await query(
+        `
+        SELECT
+            u.*,
+            r.name AS rank_name,
+            r.title AS rank_title,
+            r.color AS rank_color,
+            r.icon AS rank_icon
+        FROM users u
+        LEFT JOIN ranks r ON r.id = u.rank_id
+        WHERE LOWER(u.username) = LOWER($1)
+        LIMIT 1
+        `,
+        [username]
+    );
+
+    return result.rows[0] || null;
+}
+
+async function getUserFromToken(token) {
     if (!token) {
         return null;
     }
 
-    const userId = sessions.get(token);
+    const result = await query(
+        `
+        SELECT
+            u.*,
+            r.name AS rank_name,
+            r.title AS rank_title,
+            r.color AS rank_color,
+            r.icon AS rank_icon
+        FROM sessions s
+        JOIN users u ON u.id = s.user_id
+        LEFT JOIN ranks r ON r.id = u.rank_id
+        WHERE s.token = $1
+          AND s.expires_at > NOW()
+        LIMIT 1
+        `,
+        [token]
+    );
 
-    if (!userId) {
-        return null;
-    }
-
-    return users.get(userId) || null;
+    return result.rows[0] || null;
 }
 
-function requireAuth(req, res) {
+function getToken(req) {
+    const header = req.headers.authorization || "";
 
-    const user = getUser(req);
-
-    if (!user) {
-        error(res, 401, "Необходимо войти в аккаунт");
-        return null;
+    if (header.toLowerCase().startsWith("bearer ")) {
+        return header.slice(7).trim();
     }
 
-    return user;
+    if (req.body && req.body.token) {
+        return clean(req.body.token);
+    }
+
+    if (req.query && req.query.token) {
+        return clean(req.query.token);
+    }
+
+    return "";
 }
 
-function requireAdmin(req, res) {
-
-    const user = requireAuth(req, res);
-
-    if (!user) {
-        return null;
-    }
-
-    if (!user.isAdmin) {
-        error(res, 403, "Доступ только для администратора");
-        return null;
-    }
-
-    return user;
-}
-
-/* ======================================================
-   ROUTER
-====================================================== */
-
-async function handleApi(req, res, pathname, query) {
-
-    /* ---------------- LOGIN ---------------- */
-
-    if (req.method === "POST" && pathname === "/api/login") {
-
-        let body;
-
-        try {
-            body = await getBody(req);
-        } catch {
-            return error(res, 400, "Неверный JSON");
-        }
-
-        const email = cleanString(body.email, 200).toLowerCase();
-        const password = String(body.password ?? "");
-
-        if (!email || !password) {
-            return error(res, 400, "Введите email и пароль");
-        }
-
-        let user = null;
-
-        for (const candidate of users.values()) {
-
-            if (candidate.email.toLowerCase() === email) {
-                user = candidate;
-                break;
-            }
-        }
-
-        if (!user) {
-            return error(res, 401, "Неверный email или пароль");
-        }
-
-        if (user.password !== hashPassword(password)) {
-            return error(res, 401, "Неверный email или пароль");
-        }
-
-        const token = createToken();
-
-        sessions.set(token, user.id);
-
-        return json(res, 200, {
-            success: true,
-            token,
-            user: publicUser(user)
-        });
-    }
-
-    /* ---------------- REGISTER ---------------- */
-
-    if (req.method === "POST" && pathname === "/api/register") {
-
-        let body;
-
-        try {
-            body = await getBody(req);
-        } catch {
-            return error(res, 400, "Неверный JSON");
-        }
-
-        const username = cleanString(body.username, 30);
-        const email = cleanString(body.email, 200).toLowerCase();
-        const password = String(body.password ?? "");
-
-        if (username.length < 2) {
-            return error(res, 400, "Никнейм слишком короткий");
-        }
-
-        if (!email.includes("@")) {
-            return error(res, 400, "Введите правильный email");
-        }
-
-        if (password.length < 4) {
-            return error(res, 400, "Пароль должен содержать минимум 4 символа");
-        }
-
-        for (const user of users.values()) {
-
-            if (user.email.toLowerCase() === email) {
-                return error(res, 409, "Этот email уже зарегистрирован");
-            }
-
-            if (user.username.toLowerCase() === username.toLowerCase()) {
-                return error(res, 409, "Этот никнейм уже занят");
-            }
-        }
-
-        const user = {
-            id: id(),
-            username,
-            email,
-            password: hashPassword(password),
-
-            balance: 1000,
-            elo: 1000,
-            xp: 0,
-            wins: 0,
-
-            rankId: "bronze",
-            ownedRanks: [],
-
-            claimedQuests: [],
-
-            isAdmin: false
-        };
-
-        users.set(user.id, user);
-
-        const token = createToken();
-
-        sessions.set(token, user.id);
-
-        return json(res, 201, {
-            success: true,
-            token,
-            user: publicUser(user)
-        });
-    }
-
-    /* ---------------- LOGOUT ---------------- */
-
-    if (req.method === "POST" && pathname === "/api/logout") {
-
+async function auth(req, res, next) {
+    try {
         const token = getToken(req);
-
-        if (token) {
-            sessions.delete(token);
-        }
-
-        return json(res, 200, {
-            success: true
-        });
-    }
-
-    /* ---------------- ME ---------------- */
-
-    if (req.method === "GET" && pathname === "/api/me") {
-
-        const user = requireAuth(req, res);
+        const user = await getUserFromToken(token);
 
         if (!user) {
-            return;
+            return res.status(401).json({
+                error: "Необходима авторизация."
+            });
         }
 
-        return json(res, 200, {
-            user: publicUser(user)
+        req.token = token;
+        req.user = user;
+
+        next();
+    } catch (error) {
+        console.error("AUTH ERROR:", error);
+
+        res.status(500).json({
+            error: "Ошибка авторизации."
         });
     }
+}
 
-    /* ---------------- RANKS ---------------- */
-
-    if (req.method === "GET" && pathname === "/api/ranks") {
-
-        return json(res, 200, {
-            ranks: [...ranks.values()].map(publicRank)
-        });
+function isAdminUser(user) {
+    if (!user) {
+        return false;
     }
 
-    /* ---------------- BUY RANK ---------------- */
-
-    const buyMatch =
-        pathname.match(/^\/api\/ranks\/([^/]+)\/buy$/);
-
-    if (req.method === "POST" && buyMatch) {
-
-        const user = requireAuth(req, res);
-
-        if (!user) {
-            return;
-        }
-
-        const rankId = decodeURIComponent(buyMatch[1]);
-
-        const rank = ranks.get(rankId);
-
-        if (!rank) {
-            return error(res, 404, "Ранг не найден");
-        }
-
-        if (user.ownedRanks.includes(rankId)) {
-            return error(res, 400, "Этот ранг уже куплен");
-        }
-
-        if (user.balance < rank.price) {
-            return error(res, 400, "Недостаточно денег");
-        }
-
-        user.balance -= rank.price;
-
-        user.ownedRanks.push(rankId);
-
-        /*
-         Покупка также делает ранг текущим.
-        */
-        user.rankId = rankId;
-
-        return json(res, 200, {
-            success: true,
-            message: "Ранг куплен",
-            rank: publicRank(rank),
-            user: publicUser(user)
-        });
+    if (Boolean(user.is_admin)) {
+        return true;
     }
 
-    /* ---------------- SET CURRENT RANK ---------------- */
-
-    const setRankMatch =
-        pathname.match(/^\/api\/ranks\/([^/]+)\/equip$/);
-
-    if (req.method === "POST" && setRankMatch) {
-
-        const user = requireAuth(req, res);
-
-        if (!user) {
-            return;
-        }
-
-        const rankId = decodeURIComponent(setRankMatch[1]);
-
-        const rank = ranks.get(rankId);
-
-        if (!rank) {
-            return error(res, 404, "Ранг не найден");
-        }
-
-        if (!user.ownedRanks.includes(rankId)) {
-            return error(res, 403, "Сначала купите этот ранг");
-        }
-
-        user.rankId = rankId;
-
-        return json(res, 200, {
-            success: true,
-            user: publicUser(user)
-        });
-    }
-
-    /* ---------------- QUESTS ---------------- */
-
-    if (req.method === "GET" && pathname === "/api/quests") {
-
-        return json(res, 200, {
-            quests: [...quests.values()].map(publicQuest)
-        });
-    }
-
-    /* ---------------- CLAIM QUEST ---------------- */
-
-    const claimMatch =
-        pathname.match(/^\/api\/quests\/([^/]+)\/claim$/);
-
-    if (req.method === "POST" && claimMatch) {
-
-        const user = requireAuth(req, res);
-
-        if (!user) {
-            return;
-        }
-
-        const questId = decodeURIComponent(claimMatch[1]);
-
-        const quest = quests.get(questId);
-
-        if (!quest) {
-            return error(res, 404, "Квест не найден");
-        }
-
-        if (user.claimedQuests.includes(questId)) {
-            return error(res, 400, "Этот квест уже выполнен");
-        }
-
-        user.balance += quest.reward;
-        user.xp += quest.xp;
-
-        user.claimedQuests.push(questId);
-
-        return json(res, 200, {
-            success: true,
-            reward: quest.reward,
-            xp: quest.xp,
-            user: publicUser(user)
-        });
-    }
-
-    /* ---------------- LEADERBOARD ---------------- */
-
-    if (req.method === "GET" && pathname === "/api/leaderboard") {
-
-        const players = [...users.values()]
-            .sort((a, b) => {
-
-                if (b.elo !== a.elo) {
-                    return b.elo - a.elo;
-                }
-
-                if (b.xp !== a.xp) {
-                    return b.xp - a.xp;
-                }
-
-                return b.wins - a.wins;
-            })
-            .map(user => ({
-                id: user.id,
-                username: user.username,
-                elo: user.elo,
-                xp: user.xp,
-                wins: user.wins,
-                rankId: user.rankId
-            }));
-
-        return json(res, 200, {
-            players
-        });
-    }
-
-    /* ==================================================
-       ADMIN
-    ================================================== */
-
-    /* ---------------- ADMIN USERS ---------------- */
+    const adminEmail = clean(process.env.ADMIN_EMAIL);
 
     if (
-        req.method === "GET" &&
-        pathname === "/api/admin/users"
+        adminEmail &&
+        user.email &&
+        user.email.toLowerCase() === adminEmail.toLowerCase()
     ) {
-
-        const admin = requireAdmin(req, res);
-
-        if (!admin) {
-            return;
-        }
-
-        const search =
-            cleanString(query.get("search") || "", 100)
-                .toLowerCase();
-
-        const result = [...users.values()]
-            .filter(user => {
-
-                if (!search) {
-                    return true;
-                }
-
-                return (
-                    user.username.toLowerCase().includes(search) ||
-                    user.email.toLowerCase().includes(search)
-                );
-            })
-            .map(user => ({
-                id: user.id,
-                username: user.username,
-                email: user.email,
-                balance: user.balance,
-                elo: user.elo,
-                xp: user.xp,
-                wins: user.wins,
-                rankId: user.rankId,
-                isAdmin: user.isAdmin
-            }));
-
-        return json(res, 200, {
-            users: result
-        });
+        return true;
     }
 
-    /* ---------------- ADMIN UPDATE USER ---------------- */
+    return false;
+}
 
-    const adminUserMatch =
-        pathname.match(/^\/api\/admin\/users\/([^/]+)$/);
-
-    if (
-        (req.method === "PUT" || req.method === "PATCH") &&
-        adminUserMatch
-    ) {
-
-        const admin = requireAdmin(req, res);
-
-        if (!admin) {
-            return;
-        }
-
-        const userId = decodeURIComponent(adminUserMatch[1]);
-
-        const user = users.get(userId);
+async function admin(req, res, next) {
+    try {
+        const token = getToken(req);
+        const user = await getUserFromToken(token);
 
         if (!user) {
-            return error(res, 404, "Игрок не найден");
+            return res.status(401).json({
+                error: "Сначала войдите в аккаунт."
+            });
         }
 
-        let body;
-
-        try {
-            body = await getBody(req);
-        } catch {
-            return error(res, 400, "Неверный JSON");
+        if (!isAdminUser(user)) {
+            return res.status(403).json({
+                error: "Доступ к админке запрещён."
+            });
         }
 
-        if (body.elo !== undefined) {
-            user.elo = Math.max(0, Math.floor(number(body.elo)));
-        }
+        req.token = token;
+        req.user = user;
 
-        if (body.xp !== undefined) {
-            user.xp = Math.max(0, Math.floor(number(body.xp)));
-        }
+        next();
+    } catch (error) {
+        console.error("ADMIN AUTH ERROR:", error);
 
-        if (body.wins !== undefined) {
-            user.wins = Math.max(0, Math.floor(number(body.wins)));
-        }
+        res.status(500).json({
+            error: "Ошибка проверки администратора."
+        });
+    }
+}
 
-        if (body.balance !== undefined) {
-            user.balance = Math.max(
-                0,
-                Math.floor(number(body.balance))
+async function initDatabase() {
+    console.log("ASTRO: подключение к PostgreSQL...");
+
+    await query("SELECT NOW()");
+
+    console.log("ASTRO: PostgreSQL подключен.");
+
+    await query(`
+        CREATE TABLE IF NOT EXISTS users (
+            id BIGSERIAL PRIMARY KEY,
+            username VARCHAR(40) NOT NULL,
+            email VARCHAR(255) NOT NULL,
+            password_hash TEXT NOT NULL,
+            password_salt TEXT NOT NULL,
+            balance BIGINT NOT NULL DEFAULT 10000,
+            elo BIGINT NOT NULL DEFAULT 1000,
+            xp BIGINT NOT NULL DEFAULT 0,
+            wins BIGINT NOT NULL DEFAULT 0,
+            rank_id BIGINT,
+            is_admin BOOLEAN NOT NULL DEFAULT FALSE,
+            owned_ranks BIGINT[] NOT NULL DEFAULT ARRAY[]::BIGINT[],
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    `);
+
+    await query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS users_email_unique_idx
+        ON users (LOWER(email))
+    `);
+
+    await query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS users_username_unique_idx
+        ON users (LOWER(username))
+    `);
+
+    await query(`
+        CREATE TABLE IF NOT EXISTS ranks (
+            id BIGSERIAL PRIMARY KEY,
+            rank_id VARCHAR(80) NOT NULL UNIQUE,
+            name VARCHAR(100) NOT NULL,
+            title VARCHAR(150) NOT NULL DEFAULT '',
+            price BIGINT NOT NULL DEFAULT 0,
+            color VARCHAR(30) NOT NULL DEFAULT '#9b7cff',
+            icon VARCHAR(20) NOT NULL DEFAULT '★',
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    `);
+
+    await query(`
+        CREATE TABLE IF NOT EXISTS quests (
+            id BIGSERIAL PRIMARY KEY,
+            quest_id VARCHAR(80) NOT NULL UNIQUE,
+            title VARCHAR(150) NOT NULL,
+            description TEXT NOT NULL DEFAULT '',
+            reward BIGINT NOT NULL DEFAULT 0,
+            xp BIGINT NOT NULL DEFAULT 0,
+            active BOOLEAN NOT NULL DEFAULT TRUE,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    `);
+
+    await query(`
+        CREATE TABLE IF NOT EXISTS quest_claims (
+            id BIGSERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            quest_id BIGINT NOT NULL REFERENCES quests(id) ON DELETE CASCADE,
+            claimed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+            UNIQUE(user_id, quest_id)
+        )
+    `);
+
+    await query(`
+        CREATE TABLE IF NOT EXISTS sessions (
+            id BIGSERIAL PRIMARY KEY,
+            user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+            token TEXT NOT NULL UNIQUE,
+            expires_at TIMESTAMPTZ NOT NULL,
+            created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+        )
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS sessions_token_idx
+        ON sessions(token)
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS sessions_user_idx
+        ON sessions(user_id)
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS users_elo_idx
+        ON users(elo DESC)
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS users_xp_idx
+        ON users(xp DESC)
+    `);
+
+    await query(`
+        CREATE INDEX IF NOT EXISTS quest_claims_user_idx
+        ON quest_claims(user_id)
+    `);
+
+    await query(`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS balance BIGINT NOT NULL DEFAULT 10000
+    `);
+
+    await query(`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS elo BIGINT NOT NULL DEFAULT 1000
+    `);
+
+    await query(`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS xp BIGINT NOT NULL DEFAULT 0
+    `);
+
+    await query(`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS wins BIGINT NOT NULL DEFAULT 0
+    `);
+
+    await query(`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS is_admin BOOLEAN NOT NULL DEFAULT FALSE
+    `);
+
+    await query(`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS owned_ranks BIGINT[] NOT NULL DEFAULT ARRAY[]::BIGINT[]
+    `);
+
+    await query(`
+        ALTER TABLE users
+        ADD COLUMN IF NOT EXISTS rank_id BIGINT
+    `);
+
+    await query(`
+        CREATE UNIQUE INDEX IF NOT EXISTS ranks_rank_id_unique_idx
+        ON ranks(rank_id)
+    `);
+
+    const oldRanks = await query(`
+        SELECT id, rank_id
+        FROM ranks
+        ORDER BY id ASC
+    `);
+
+    for (const rank of oldRanks.rows) {
+        const rankId = Number(rank.id);
+
+        await query(
+            `
+            UPDATE users
+            SET owned_ranks = ARRAY(
+                SELECT DISTINCT x
+                FROM unnest(
+                    COALESCE(owned_ranks, ARRAY[]::BIGINT[])
+                ) AS x
+                WHERE x = $1
+            )
+            WHERE FALSE
+            `,
+            [rankId]
+        );
+    }
+
+    await query(`
+        INSERT INTO ranks
+            (rank_id, name, title, price, color, icon)
+        VALUES
+            ('bronze', 'BRONZE', 'Бронзовый', 1000, '#cd7f32', '🥉'),
+            ('silver', 'SILVER', 'Серебряный', 5000, '#c0c0c0', '🥈'),
+            ('gold', 'GOLD', 'Золотой', 15000, '#ffd700', '🥇'),
+            ('diamond', 'DIAMOND', 'Алмазный', 30000, '#55ddff', '💎'),
+            ('master', 'MASTER', 'Мастер', 60000, '#c66cff', '👑')
+        ON CONFLICT (rank_id) DO NOTHING
+    `);
+
+    await query(`
+        INSERT INTO quests
+            (quest_id, title, description, reward, xp, active)
+        VALUES
+            (
+                'first-win',
+                'Первая победа',
+                'Одержи свою первую победу.',
+                1000,
+                100,
+                TRUE
+            ),
+            (
+                'elo-1500',
+                'Путь к вершине',
+                'Достигни 1500 ELO.',
+                3000,
+                300,
+                TRUE
+            ),
+            (
+                'elo-2000',
+                'Космическая легенда',
+                'Достигни 2000 ELO.',
+                10000,
+                1000,
+                TRUE
+            )
+        ON CONFLICT (quest_id) DO NOTHING
+    `);
+
+    const adminEmail = clean(process.env.ADMIN_EMAIL);
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (adminEmail && adminPassword) {
+        const existingAdmin = await getUserByEmail(adminEmail);
+
+        if (!existingAdmin) {
+            const credentials = createPassword(adminPassword);
+
+            await query(
+                `
+                INSERT INTO users
+                    (
+                        username,
+                        email,
+                        password_hash,
+                        password_salt,
+                        balance,
+                        elo,
+                        xp,
+                        wins,
+                        is_admin
+                    )
+                VALUES
+                    ($1, $2, $3, $4, 1000000, 5000, 0, 0, TRUE)
+                `,
+                [
+                    "Administrator",
+                    adminEmail,
+                    credentials.hash,
+                    credentials.salt
+                ]
             );
+
+            console.log("ASTRO: администратор создан:", adminEmail);
+        } else {
+            await query(
+                `
+                UPDATE users
+                SET is_admin = TRUE
+                WHERE id = $1
+                `,
+                [existingAdmin.id]
+            );
+
+            console.log("ASTRO: права администратора подтверждены.");
         }
-
-        if (body.rankId !== undefined) {
-
-            const rankId = cleanString(body.rankId, 100);
-
-            if (rankId === "" || ranks.has(rankId)) {
-                user.rankId = rankId;
-            }
-        }
-
-        return json(res, 200, {
-            success: true,
-            user: publicUser(user)
-        });
+    } else {
+        console.log(
+            "ASTRO: ADMIN_EMAIL / ADMIN_PASSWORD не заданы. " +
+            "Первый зарегистрированный пользователь НЕ будет автоматически админом."
+        );
     }
 
-    /* ---------------- ADMIN RANKS ---------------- */
+    await query(`
+        DELETE FROM sessions
+        WHERE expires_at <= NOW()
+    `);
 
-    if (
-        req.method === "GET" &&
-        pathname === "/api/admin/ranks"
-    ) {
+    console.log("ASTRO: база данных готова.");
+}
 
-        const admin = requireAdmin(req, res);
+app.get("/api/health", async (req, res) => {
+    try {
+        await query("SELECT 1");
 
-        if (!admin) {
-            return;
-        }
-
-        return json(res, 200, {
-            ranks: [...ranks.values()].map(publicRank)
-        });
-    }
-
-    if (
-        req.method === "POST" &&
-        pathname === "/api/admin/ranks"
-    ) {
-
-        const admin = requireAdmin(req, res);
-
-        if (!admin) {
-            return;
-        }
-
-        let body;
-
-        try {
-            body = await getBody(req);
-        } catch {
-            return error(res, 400, "Неверный JSON");
-        }
-
-        const rankId = cleanString(body.rankId, 50);
-
-        if (!rankId) {
-            return error(res, 400, "Введите ID ранга");
-        }
-
-        if (ranks.has(rankId)) {
-            return error(res, 409, "Такой ранг уже существует");
-        }
-
-        const rank = {
-            id: id(),
-            rankId,
-            name: cleanString(body.name, 50) || rankId,
-            title: cleanString(body.title, 100) || "Новый ранг",
-            price: Math.max(0, Math.floor(number(body.price))),
-            color: cleanString(body.color, 30) || "#9b7cff",
-            icon: cleanString(body.icon, 10) || "★"
-        };
-
-        ranks.set(rankId, rank);
-
-        return json(res, 201, {
-            success: true,
-            rank: publicRank(rank)
-        });
-    }
-
-    const adminRankMatch =
-        pathname.match(/^\/api\/admin\/ranks\/([^/]+)$/);
-
-    if (
-        req.method === "DELETE" &&
-        adminRankMatch
-    ) {
-
-        const admin = requireAdmin(req, res);
-
-        if (!admin) {
-            return;
-        }
-
-        const idValue =
-            decodeURIComponent(adminRankMatch[1]);
-
-        if (!ranks.has(idValue)) {
-            return error(res, 404, "Ранг не найден");
-        }
-
-        /*
-        Нельзя удалить текущий стартовый бронзовый ранг.
-        */
-        if (idValue === "bronze") {
-            return error(res, 400, "Нельзя удалить стартовый ранг");
-        }
-
-        ranks.delete(idValue);
-
-        for (const user of users.values()) {
-
-            user.ownedRanks =
-                user.ownedRanks.filter(x => x !== idValue);
-
-            if (user.rankId === idValue) {
-                user.rankId = "bronze";
-            }
-        }
-
-        return json(res, 200, {
-            success: true
-        });
-    }
-
-    /* ---------------- ADMIN QUESTS ---------------- */
-
-    if (
-        req.method === "GET" &&
-        pathname === "/api/admin/quests"
-    ) {
-
-        const admin = requireAdmin(req, res);
-
-        if (!admin) {
-            return;
-        }
-
-        return json(res, 200, {
-            quests: [...quests.values()].map(publicQuest)
-        });
-    }
-
-    if (
-        req.method === "POST" &&
-        pathname === "/api/admin/quests"
-    ) {
-
-        const admin = requireAdmin(req, res);
-
-        if (!admin) {
-            return;
-        }
-
-        let body;
-
-        try {
-            body = await getBody(req);
-        } catch {
-            return error(res, 400, "Неверный JSON");
-        }
-
-        const questId = cleanString(body.questId, 50);
-
-        if (!questId) {
-            return error(res, 400, "Введите ID квеста");
-        }
-
-        if (quests.has(questId)) {
-            return error(res, 409, "Такой квест уже существует");
-        }
-
-        const quest = {
-            id: id(),
-            questId,
-            title:
-                cleanString(body.title, 100) ||
-                "Новый квест",
-
-            description:
-                cleanString(body.description, 500) ||
-                "Описание отсутствует",
-
-            reward:
-                Math.max(
-                    0,
-                    Math.floor(number(body.reward))
-                ),
-
-            xp:
-                Math.max(
-                    0,
-                    Math.floor(number(body.xp))
-                )
-        };
-
-        quests.set(questId, quest);
-
-        return json(res, 201, {
-            success: true,
-            quest: publicQuest(quest)
-        });
-    }
-
-    const adminQuestMatch =
-        pathname.match(/^\/api\/admin\/quests\/([^/]+)$/);
-
-    if (
-        req.method === "DELETE" &&
-        adminQuestMatch
-    ) {
-
-        const admin = requireAdmin(req, res);
-
-        if (!admin) {
-            return;
-        }
-
-        const questId =
-            decodeURIComponent(adminQuestMatch[1]);
-
-        if (!quests.has(questId)) {
-            return error(res, 404, "Квест не найден");
-        }
-
-        quests.delete(questId);
-
-        for (const user of users.values()) {
-            user.claimedQuests =
-                user.claimedQuests.filter(x => x !== questId);
-        }
-
-        return json(res, 200, {
-            success: true
-        });
-    }
-
-    /* ---------------- HEALTH ---------------- */
-
-    if (
-        req.method === "GET" &&
-        pathname === "/api/health"
-    ) {
-
-        return json(res, 200, {
+        res.json({
             ok: true,
             server: "ASTRO ONLINE",
-            users: users.size,
-            ranks: ranks.size,
-            quests: quests.size
+            database: "connected",
+            time: new Date().toISOString()
+        });
+    } catch (error) {
+        console.error("HEALTH ERROR:", error);
+
+        res.status(500).json({
+            ok: false,
+            database: "error"
         });
     }
+});
 
-    return error(res, 404, "API маршрут не найден");
-}
-
-/* ======================================================
-   STATIC FILES
-====================================================== */
-
-function serveIndex(res) {
-
-    const file = path.join(__dirname, "index.html");
-
-    if (!fs.existsSync(file)) {
-
-        return text(
-            res,
-            404,
-            "index.html не найден. Положи index.html рядом с server.js."
-        );
-    }
-
-    const html = fs.readFileSync(file);
-
-    res.writeHead(200, {
-        "Content-Type": "text/html; charset=utf-8",
-        "Content-Length": html.length,
-        "Cache-Control": "no-cache"
-    });
-
-    res.end(html);
-}
-
-function serveStatic(res, pathname) {
-
-    if (pathname === "/" || pathname === "/index.html") {
-        return serveIndex(res);
-    }
-
-    /*
-    Разрешаем только несколько безопасных статических файлов.
-    */
-
-    const allowed = {
-        ".html": "text/html; charset=utf-8",
-        ".css": "text/css; charset=utf-8",
-        ".js": "application/javascript; charset=utf-8",
-        ".png": "image/png",
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".svg": "image/svg+xml",
-        ".ico": "image/x-icon"
-    };
-
-    const ext = path.extname(pathname).toLowerCase();
-
-    if (!allowed[ext]) {
-        return error(res, 404, "Файл не найден");
-    }
-
-    const safePath =
-        path.normalize(
-            path.join(__dirname, pathname)
-        );
-
-    if (!safePath.startsWith(__dirname)) {
-        return error(res, 403, "Доступ запрещён");
-    }
-
-    if (!fs.existsSync(safePath)) {
-        return error(res, 404, "Файл не найден");
-    }
-
+app.post("/api/register", async (req, res) => {
     try {
+        const username = clean(req.body.username);
+        const email = clean(req.body.email).toLowerCase();
+        const password = String(req.body.password || "");
 
-        const file = fs.readFileSync(safePath);
-
-        res.writeHead(200, {
-            "Content-Type": allowed[ext],
-            "Content-Length": file.length,
-            "Cache-Control": "no-cache"
-        });
-
-        res.end(file);
-
-    } catch {
-        error(res, 500, "Не удалось открыть файл");
-    }
-}
-
-/* ======================================================
-   HTTP SERVER
-====================================================== */
-
-const server = http.createServer(async (req, res) => {
-
-    try {
-
-        if (req.method === "OPTIONS") {
-
-            res.writeHead(204, {
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods":
-                    "GET,POST,PUT,PATCH,DELETE,OPTIONS",
-                "Access-Control-Allow-Headers":
-                    "Content-Type, Authorization"
+        if (username.length < 3 || username.length > 40) {
+            return res.status(400).json({
+                error: "Никнейм должен содержать от 3 до 40 символов."
             });
-
-            res.end();
-
-            return;
         }
 
-        const parsed = new URL(
-            req.url,
-            `http://${req.headers.host || "localhost"}`
+        if (!/^[a-zA-Z0-9а-яА-ЯёЁ_ -]+$/.test(username)) {
+            return res.status(400).json({
+                error: "В никнейме есть недопустимые символы."
+            });
+        }
+
+        if (!email.includes("@") || email.length > 255) {
+            return res.status(400).json({
+                error: "Введите корректный Email."
+            });
+        }
+
+        if (password.length < 6 || password.length > 200) {
+            return res.status(400).json({
+                error: "Пароль должен содержать минимум 6 символов."
+            });
+        }
+
+        const existingEmail = await getUserByEmail(email);
+
+        if (existingEmail) {
+            return res.status(409).json({
+                error: "Этот Email уже зарегистрирован."
+            });
+        }
+
+        const existingUsername = await getUserByUsername(username);
+
+        if (existingUsername) {
+            return res.status(409).json({
+                error: "Этот никнейм уже занят."
+            });
+        }
+
+        const credentials = createPassword(password);
+
+        const result = await query(
+            `
+            INSERT INTO users
+                (
+                    username,
+                    email,
+                    password_hash,
+                    password_salt
+                )
+            VALUES
+                ($1, $2, $3, $4)
+            RETURNING id
+            `,
+            [
+                username,
+                email,
+                credentials.hash,
+                credentials.salt
+            ]
         );
 
-        const pathname = parsed.pathname;
+        const user = await getUserById(result.rows[0].id);
 
-        if (pathname.startsWith("/api/")) {
+        const token = randomToken();
 
-            await handleApi(
-                req,
-                res,
-                pathname,
-                parsed.searchParams
-            );
+        await query(
+            `
+            INSERT INTO sessions
+                (user_id, token, expires_at)
+            VALUES
+                ($1, $2, NOW() + INTERVAL '30 days')
+            `,
+            [user.id, token]
+        );
 
-            return;
+        res.status(201).json({
+            success: true,
+            token,
+            user: publicUser(user)
+        });
+    } catch (error) {
+        console.error("REGISTER ERROR:", error);
+
+        if (error.code === "23505") {
+            return res.status(409).json({
+                error: "Email или никнейм уже используется."
+            });
         }
 
-        if (req.method !== "GET" && req.method !== "HEAD") {
+        res.status(500).json({
+            error: "Ошибка регистрации."
+        });
+    }
+});
 
-            error(
-                res,
-                405,
-                "Метод не поддерживается"
-            );
+app.post("/api/login", async (req, res) => {
+    try {
+        const email = clean(req.body.email).toLowerCase();
+        const password = String(req.body.password || "");
 
-            return;
+        if (!email || !password) {
+            return res.status(400).json({
+                error: "Введите Email и пароль."
+            });
         }
 
-        serveStatic(res, pathname);
+        const user = await getUserByEmail(email);
 
-    } catch (err) {
+        if (!user) {
+            return res.status(401).json({
+                error: "Неверный Email или пароль."
+            });
+        }
 
-        console.error("SERVER ERROR:", err);
+        const valid = checkPassword(
+            password,
+            user.password_salt,
+            user.password_hash
+        );
 
-        if (!res.headersSent) {
-            error(
-                res,
-                500,
-                "Внутренняя ошибка сервера"
+        if (!valid) {
+            return res.status(401).json({
+                error: "Неверный Email или пароль."
+            });
+        }
+
+        const token = randomToken();
+
+        await query(
+            `
+            INSERT INTO sessions
+                (user_id, token, expires_at)
+            VALUES
+                ($1, $2, NOW() + INTERVAL '30 days')
+            `,
+            [user.id, token]
+        );
+
+        res.json({
+            success: true,
+            token,
+            user: publicUser(user)
+        });
+    } catch (error) {
+        console.error("LOGIN ERROR:", error);
+
+        res.status(500).json({
+            error: "Ошибка входа."
+        });
+    }
+});
+
+app.post("/api/logout", auth, async (req, res) => {
+    try {
+        await query(
+            `
+            DELETE FROM sessions
+            WHERE token = $1
+            `,
+            [req.token]
+        );
+
+        res.json({
+            success: true
+        });
+    } catch (error) {
+        console.error("LOGOUT ERROR:", error);
+
+        res.status(500).json({
+            error: "Ошибка выхода."
+        });
+    }
+});
+
+app.get("/api/me", auth, async (req, res) => {
+    try {
+        const user = await getUserById(req.user.id);
+
+        res.json({
+            success: true,
+            user: publicUser(user)
+        });
+    } catch (error) {
+        console.error("ME ERROR:", error);
+
+        res.status(500).json({
+            error: "Ошибка получения профиля."
+        });
+    }
+});
+
+app.get("/api/ranks", async (req, res) => {
+    try {
+        const result = await query(`
+            SELECT *
+            FROM ranks
+            ORDER BY price ASC, id ASC
+        `);
+
+        res.json({
+            success: true,
+            ranks: result.rows.map(publicRank)
+        });
+    } catch (error) {
+        console.error("RANKS ERROR:", error);
+
+        res.status(500).json({
+            error: "Не удалось загрузить ранги."
+        });
+    }
+});
+
+app.post("/api/ranks/:rankId/buy", auth, async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        const rankResult = await client.query(
+            `
+            SELECT *
+            FROM ranks
+            WHERE rank_id = $1
+            LIMIT 1
+            FOR UPDATE
+            `,
+            [clean(req.params.rankId)]
+        );
+
+        if (!rankResult.rows.length) {
+            await client.query("ROLLBACK");
+
+            return res.status(404).json({
+                error: "Ранг не найден."
+            });
+        }
+
+        const rank = rankResult.rows[0];
+
+        const userResult = await client.query(
+            `
+            SELECT *
+            FROM users
+            WHERE id = $1
+            LIMIT 1
+            FOR UPDATE
+            `,
+            [req.user.id]
+        );
+
+        const user = userResult.rows[0];
+
+        const owned = Array.isArray(user.owned_ranks)
+            ? user.owned_ranks.map(Number)
+            : [];
+
+        if (owned.includes(Number(rank.id))) {
+            await client.query("ROLLBACK");
+
+            return res.status(400).json({
+                error: "Этот ранг уже куплен."
+            });
+        }
+
+        const balance = Number(user.balance || 0);
+        const price = Number(rank.price || 0);
+
+        if (balance < price) {
+            await client.query("ROLLBACK");
+
+            return res.status(400).json({
+                error: "Недостаточно денег."
+            });
+        }
+
+        const newBalance = balance - price;
+
+        await client.query(
+            `
+            UPDATE users
+            SET
+                balance = $1,
+                rank_id = $2,
+                owned_ranks = ARRAY(
+                    SELECT DISTINCT x
+                    FROM unnest(
+                        COALESCE(owned_ranks, ARRAY[]::BIGINT[])
+                        || ARRAY[$2::BIGINT]
+                    ) AS x
+                )
+            WHERE id = $3
+            `,
+            [
+                newBalance,
+                rank.id,
+                user.id
+            ]
+        );
+
+        await client.query("COMMIT");
+
+        const updated = await getUserById(user.id);
+
+        io.emit("leaderboard:update");
+        io.emit("ranks:update");
+
+        res.json({
+            success: true,
+            message: "Ранг куплен.",
+            user: publicUser(updated),
+            rank: publicRank(rank)
+        });
+    } catch (error) {
+        try {
+            await client.query("ROLLBACK");
+        } catch (_) {}
+
+        console.error("BUY RANK ERROR:", error);
+
+        res.status(500).json({
+            error: "Ошибка покупки ранга."
+        });
+    } finally {
+        client.release();
+    }
+});
+
+app.get("/api/quests", async (req, res) => {
+    try {
+        const result = await query(`
+            SELECT *
+            FROM quests
+            WHERE active = TRUE
+            ORDER BY id DESC
+        `);
+
+        res.json({
+            success: true,
+            quests: result.rows.map(publicQuest)
+        });
+    } catch (error) {
+        console.error("QUESTS ERROR:", error);
+
+        res.status(500).json({
+            error: "Не удалось загрузить квесты."
+        });
+    }
+});
+
+app.post("/api/quests/:questId/claim", auth, async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        const questResult = await client.query(
+            `
+            SELECT *
+            FROM quests
+            WHERE quest_id = $1
+              AND active = TRUE
+            LIMIT 1
+            FOR UPDATE
+            `,
+            [clean(req.params.questId)]
+        );
+
+        if (!questResult.rows.length) {
+            await client.query("ROLLBACK");
+
+            return res.status(404).json({
+                error: "Квест не найден."
+            });
+        }
+
+        const quest = questResult.rows[0];
+
+        const already = await client.query(
+            `
+            SELECT id
+            FROM quest_claims
+            WHERE user_id = $1
+              AND quest_id = $2
+            LIMIT 1
+            `,
+            [req.user.id, quest.id]
+        );
+
+        if (already.rows.length) {
+            await client.query("ROLLBACK");
+
+            return res.status(400).json({
+                error: "Этот квест уже выполнен."
+            });
+        }
+
+        const userResult = await client.query(
+            `
+            SELECT *
+            FROM users
+            WHERE id = $1
+            FOR UPDATE
+            `,
+            [req.user.id]
+        );
+
+        const user = userResult.rows[0];
+
+        if (quest.quest_id === "first-win" && Number(user.wins) < 1) {
+            await client.query("ROLLBACK");
+
+            return res.status(400).json({
+                error: "Сначала одержите победу."
+            });
+        }
+
+        if (
+            quest.quest_id === "elo-1500" &&
+            Number(user.elo) < 1500
+        ) {
+            await client.query("ROLLBACK");
+
+            return res.status(400).json({
+                error: "Сначала достигните 1500 ELO."
+            });
+        }
+
+        if (
+            quest.quest_id === "elo-2000" &&
+            Number(user.elo) < 2000
+        ) {
+            await client.query("ROLLBACK");
+
+            return res.status(400).json({
+                error: "Сначала достигните 2000 ELO."
+            });
+        }
+
+        await client.query(
+            `
+            INSERT INTO quest_claims
+                (user_id, quest_id)
+            VALUES
+                ($1, $2)
+            `,
+            [user.id, quest.id]
+        );
+
+        await client.query(
+            `
+            UPDATE users
+            SET
+                balance = balance + $1,
+                xp = xp + $2
+            WHERE id = $3
+            `,
+            [
+                Number(quest.reward || 0),
+                Number(quest.xp || 0),
+                user.id
+            ]
+        );
+
+        await client.query("COMMIT");
+
+        const updated = await getUserById(user.id);
+
+        io.emit("leaderboard:update");
+
+        res.json({
+            success: true,
+            reward: Number(quest.reward || 0),
+            xp: Number(quest.xp || 0),
+            user: publicUser(updated)
+        });
+    } catch (error) {
+        try {
+            await client.query("ROLLBACK");
+        } catch (_) {}
+
+        console.error("CLAIM QUEST ERROR:", error);
+
+        if (error.code === "23505") {
+            return res.status(400).json({
+                error: "Этот квест уже выполнен."
+            });
+        }
+
+        res.status(500).json({
+            error: "Ошибка выполнения квеста."
+        });
+    } finally {
+        client.release();
+    }
+});
+
+app.get("/api/leaderboard", async (req, res) => {
+    try {
+        const result = await query(`
+            SELECT
+                u.id,
+                u.username,
+                u.elo,
+                u.xp,
+                u.wins,
+                u.rank_id,
+                r.name AS rank_name,
+                r.title AS rank_title,
+                r.color AS rank_color,
+                r.icon AS rank_icon
+            FROM users u
+            LEFT JOIN ranks r ON r.id = u.rank_id
+            ORDER BY
+                u.elo DESC,
+                u.xp DESC,
+                u.wins DESC,
+                u.id ASC
+            LIMIT 100
+        `);
+
+        res.json({
+            success: true,
+            players: result.rows.map((row, index) => ({
+                id: String(row.id),
+                position: index + 1,
+                username: row.username,
+                elo: Number(row.elo || 0),
+                xp: Number(row.xp || 0),
+                wins: Number(row.wins || 0),
+                rankId: row.rank_id ? String(row.rank_id) : null,
+                rankName: row.rank_name || null,
+                rankTitle: row.rank_title || null,
+                rankColor: row.rank_color || null,
+                rankIcon: row.rank_icon || null
+            }))
+        });
+    } catch (error) {
+        console.error("LEADERBOARD ERROR:", error);
+
+        res.status(500).json({
+            error: "Не удалось загрузить рейтинг."
+        });
+    }
+});
+
+app.get("/api/admin/users", admin, async (req, res) => {
+    try {
+        const search = clean(req.query.search);
+
+        let result;
+
+        if (search) {
+            result = await query(
+                `
+                SELECT
+                    u.*,
+                    r.name AS rank_name,
+                    r.title AS rank_title,
+                    r.color AS rank_color,
+                    r.icon AS rank_icon
+                FROM users u
+                LEFT JOIN ranks r ON r.id = u.rank_id
+                WHERE
+                    u.username ILIKE $1
+                    OR u.email ILIKE $1
+                ORDER BY u.elo DESC
+                LIMIT 100
+                `,
+                ["%" + search + "%"]
             );
         } else {
-            res.end();
+            result = await query(`
+                SELECT
+                    u.*,
+                    r.name AS rank_name,
+                    r.title AS rank_title,
+                    r.color AS rank_color,
+                    r.icon AS rank_icon
+                FROM users u
+                LEFT JOIN ranks r ON r.id = u.rank_id
+                ORDER BY u.elo DESC
+                LIMIT 100
+            `);
         }
+
+        res.json({
+            success: true,
+            users: result.rows.map(publicUser)
+        });
+    } catch (error) {
+        console.error("ADMIN USERS ERROR:", error);
+
+        res.status(500).json({
+            error: "Не удалось загрузить игроков."
+        });
     }
 });
 
-/* ======================================================
-   START
-====================================================== */
+app.put("/api/admin/users/:id", admin, async (req, res) => {
+    try {
+        const id = integer(req.params.id, 0);
 
-server.listen(PORT, HOST, () => {
+        if (!id) {
+            return res.status(400).json({
+                error: "Неверный ID игрока."
+            });
+        }
 
-    console.log("");
-    console.log("======================================");
-    console.log("        ASTRO ONLINE SERVER");
-    console.log("======================================");
-    console.log("");
-    console.log(`Сайт: http://localhost:${PORT}`);
-    console.log("");
-    console.log("АДМИН:");
-    console.log(`Email: ${ADMIN_EMAIL}`);
-    console.log(`Пароль: ${ADMIN_PASSWORD}`);
-    console.log("");
-    console.log("API:");
-    console.log(`http://localhost:${PORT}/api/health`);
-    console.log("");
-    console.log("Сервер запущен.");
-    console.log("======================================");
-    console.log("");
+        const current = await getUserById(id);
+
+        if (!current) {
+            return res.status(404).json({
+                error: "Игрок не найден."
+            });
+        }
+
+        const elo = Math.max(0, integer(req.body.elo, Number(current.elo)));
+        const xp = Math.max(0, integer(req.body.xp, Number(current.xp)));
+        const wins = Math.max(0, integer(req.body.wins, Number(current.wins)));
+        const balance = Math.max(
+            0,
+            integer(req.body.balance, Number(current.balance))
+        );
+
+        let rankId = current.rank_id;
+
+        if (
+            req.body.rankId !== undefined &&
+            req.body.rankId !== null &&
+            clean(req.body.rankId) !== ""
+        ) {
+            const rank = await query(
+                `
+                SELECT id
+                FROM ranks
+                WHERE rank_id = $1
+                LIMIT 1
+                `,
+                [clean(req.body.rankId)]
+            );
+
+            if (!rank.rows.length) {
+                return res.status(400).json({
+                    error: "Указанный ранг не найден."
+                });
+            }
+
+            rankId = rank.rows[0].id;
+        }
+
+        await query(
+            `
+            UPDATE users
+            SET
+                elo = $1,
+                xp = $2,
+                wins = $3,
+                balance = $4,
+                rank_id = $5
+            WHERE id = $6
+            `,
+            [
+                elo,
+                xp,
+                wins,
+                balance,
+                rankId,
+                id
+            ]
+        );
+
+        const updated = await getUserById(id);
+
+        io.emit("leaderboard:update");
+
+        res.json({
+            success: true,
+            user: publicUser(updated)
+        });
+    } catch (error) {
+        console.error("ADMIN UPDATE USER ERROR:", error);
+
+        res.status(500).json({
+            error: "Не удалось сохранить игрока."
+        });
+    }
 });
 
-/* ======================================================
-   GRACEFUL SHUTDOWN
-====================================================== */
+app.post("/api/admin/users/:id/give", admin, async (req, res) => {
+    try {
+        const id = integer(req.params.id, 0);
 
-function shutdown() {
+        const user = await getUserById(id);
 
-    console.log("\nОстановка ASTRO SERVER...");
+        if (!user) {
+            return res.status(404).json({
+                error: "Игрок не найден."
+            });
+        }
 
-    server.close(() => {
-        console.log("Сервер остановлен.");
-        process.exit(0);
+        const eloAdd = integer(req.body.elo, 0);
+        const xpAdd = integer(req.body.xp, 0);
+        const winsAdd = integer(req.body.wins, 0);
+        const moneyAdd = integer(req.body.balance, 0);
+
+        await query(
+            `
+            UPDATE users
+            SET
+                elo = GREATEST(0, elo + $1),
+                xp = GREATEST(0, xp + $2),
+                wins = GREATEST(0, wins + $3),
+                balance = GREATEST(0, balance + $4)
+            WHERE id = $5
+            `,
+            [
+                eloAdd,
+                xpAdd,
+                winsAdd,
+                moneyAdd,
+                id
+            ]
+        );
+
+        const updated = await getUserById(id);
+
+        io.emit("leaderboard:update");
+
+        res.json({
+            success: true,
+            user: publicUser(updated)
+        });
+    } catch (error) {
+        console.error("ADMIN GIVE ERROR:", error);
+
+        res.status(500).json({
+            error: "Ошибка выдачи."
+        });
+    }
+});
+
+app.get("/api/admin/ranks", admin, async (req, res) => {
+    try {
+        const result = await query(`
+            SELECT *
+            FROM ranks
+            ORDER BY price ASC, id ASC
+        `);
+
+        res.json({
+            success: true,
+            ranks: result.rows.map(publicRank)
+        });
+    } catch (error) {
+        console.error("ADMIN RANKS ERROR:", error);
+
+        res.status(500).json({
+            error: "Ошибка загрузки рангов."
+        });
+    }
+});
+
+app.post("/api/admin/ranks", admin, async (req, res) => {
+    try {
+        const rankId = clean(req.body.rankId);
+        const name = clean(req.body.name);
+        const title = clean(req.body.title);
+        const price = Math.max(0, integer(req.body.price, 0));
+        const color = clean(req.body.color) || "#9b7cff";
+        const icon = clean(req.body.icon) || "★";
+
+        if (!rankId || !name) {
+            return res.status(400).json({
+                error: "ID и название ранга обязательны."
+            });
+        }
+
+        if (!/^[a-zA-Z0-9_-]+$/.test(rankId)) {
+            return res.status(400).json({
+                error: "ID ранга может содержать только буквы, цифры, _ и -."
+            });
+        }
+
+        const result = await query(
+            `
+            INSERT INTO ranks
+                (
+                    rank_id,
+                    name,
+                    title,
+                    price,
+                    color,
+                    icon
+                )
+            VALUES
+                ($1, $2, $3, $4, $5, $6)
+            RETURNING *
+            `,
+            [
+                rankId,
+                name,
+                title,
+                price,
+                color,
+                icon
+            ]
+        );
+
+        io.emit("ranks:update");
+
+        res.status(201).json({
+            success: true,
+            rank: publicRank(result.rows[0])
+        });
+    } catch (error) {
+        console.error("ADMIN CREATE RANK ERROR:", error);
+
+        if (error.code === "23505") {
+            return res.status(409).json({
+                error: "Ранг с таким ID уже существует."
+            });
+        }
+
+        res.status(500).json({
+            error: "Ошибка создания ранга."
+        });
+    }
+});
+
+app.delete("/api/admin/ranks/:id", admin, async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        const id = integer(req.params.id, 0);
+
+        const rankResult = await client.query(
+            `
+            SELECT *
+            FROM ranks
+            WHERE id = $1
+            LIMIT 1
+            FOR UPDATE
+            `,
+            [id]
+        );
+
+        if (!rankResult.rows.length) {
+            await client.query("ROLLBACK");
+
+            return res.status(404).json({
+                error: "Ранг не найден."
+            });
+        }
+
+        await client.query(
+            `
+            UPDATE users
+            SET rank_id = NULL
+            WHERE rank_id = $1
+            `,
+            [id]
+        );
+
+        await client.query(
+            `
+            UPDATE users
+            SET owned_ranks = array_remove(
+                COALESCE(owned_ranks, ARRAY[]::BIGINT[]),
+                $1::BIGINT
+            )
+            `,
+            [id]
+        );
+
+        await client.query(
+            `
+            DELETE FROM ranks
+            WHERE id = $1
+            `,
+            [id]
+        );
+
+        await client.query("COMMIT");
+
+        io.emit("ranks:update");
+        io.emit("leaderboard:update");
+
+        res.json({
+            success: true
+        });
+    } catch (error) {
+        try {
+            await client.query("ROLLBACK");
+        } catch (_) {}
+
+        console.error("ADMIN DELETE RANK ERROR:", error);
+
+        res.status(500).json({
+            error: "Ошибка удаления ранга."
+        });
+    } finally {
+        client.release();
+    }
+});
+
+app.post("/api/admin/users/:id/rank", admin, async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        const userId = integer(req.params.id, 0);
+        const rankIdText = clean(req.body.rankId);
+
+        const userResult = await client.query(
+            `
+            SELECT *
+            FROM users
+            WHERE id = $1
+            LIMIT 1
+            FOR UPDATE
+            `,
+            [userId]
+        );
+
+        if (!userResult.rows.length) {
+            await client.query("ROLLBACK");
+
+            return res.status(404).json({
+                error: "Игрок не найден."
+            });
+        }
+
+        const rankResult = await client.query(
+            `
+            SELECT *
+            FROM ranks
+            WHERE rank_id = $1
+            LIMIT 1
+            `,
+            [rankIdText]
+        );
+
+        if (!rankResult.rows.length) {
+            await client.query("ROLLBACK");
+
+            return res.status(404).json({
+                error: "Ранг не найден."
+            });
+        }
+
+        const rank = rankResult.rows[0];
+
+        await client.query(
+            `
+            UPDATE users
+            SET
+                rank_id = $1,
+                owned_ranks = ARRAY(
+                    SELECT DISTINCT x
+                    FROM unnest(
+                        COALESCE(owned_ranks, ARRAY[]::BIGINT[])
+                        || ARRAY[$1::BIGINT]
+                    ) AS x
+                )
+            WHERE id = $2
+            `,
+            [
+                rank.id,
+                userId
+            ]
+        );
+
+        await client.query("COMMIT");
+
+        const updated = await getUserById(userId);
+
+        io.emit("leaderboard:update");
+        io.emit("ranks:update");
+
+        res.json({
+            success: true,
+            user: publicUser(updated)
+        });
+    } catch (error) {
+        try {
+            await client.query("ROLLBACK");
+        } catch (_) {}
+
+        console.error("ADMIN GIVE RANK ERROR:", error);
+
+        res.status(500).json({
+            error: "Ошибка выдачи ранга."
+        });
+    } finally {
+        client.release();
+    }
+});
+
+app.get("/api/admin/quests", admin, async (req, res) => {
+    try {
+        const result = await query(`
+            SELECT *
+            FROM quests
+            ORDER BY id DESC
+        `);
+
+        res.json({
+            success: true,
+            quests: result.rows.map(publicQuest)
+        });
+    } catch (error) {
+        console.error("ADMIN QUESTS ERROR:", error);
+
+        res.status(500).json({
+            error: "Ошибка загрузки квестов."
+        });
+    }
+});
+
+app.post("/api/admin/quests", admin, async (req, res) => {
+    try {
+        const questId = clean(req.body.questId);
+        const title = clean(req.body.title);
+        const description = clean(req.body.description);
+        const reward = Math.max(0, integer(req.body.reward, 0));
+        const xp = Math.max(0, integer(req.body.xp, 0));
+
+        if (!questId || !title) {
+            return res.status(400).json({
+                error: "ID и название квеста обязательны."
+            });
+        }
+
+        if (!/^[a-zA-Z0-9_-]+$/.test(questId)) {
+            return res.status(400).json({
+                error: "ID квеста может содержать только буквы, цифры, _ и -."
+            });
+        }
+
+        const result = await query(
+            `
+            INSERT INTO quests
+                (
+                    quest_id,
+                    title,
+                    description,
+                    reward,
+                    xp,
+                    active
+                )
+            VALUES
+                ($1, $2, $3, $4, $5, TRUE)
+            RETURNING *
+            `,
+            [
+                questId,
+                title,
+                description,
+                reward,
+                xp
+            ]
+        );
+
+        io.emit("quests:update");
+
+        res.status(201).json({
+            success: true,
+            quest: publicQuest(result.rows[0])
+        });
+    } catch (error) {
+        console.error("ADMIN CREATE QUEST ERROR:", error);
+
+        if (error.code === "23505") {
+            return res.status(409).json({
+                error: "Квест с таким ID уже существует."
+            });
+        }
+
+        res.status(500).json({
+            error: "Ошибка создания квеста."
+        });
+    }
+});
+
+app.delete("/api/admin/quests/:id", admin, async (req, res) => {
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        const id = integer(req.params.id, 0);
+
+        const result = await client.query(
+            `
+            SELECT id
+            FROM quests
+            WHERE id = $1
+            LIMIT 1
+            `,
+            [id]
+        );
+
+        if (!result.rows.length) {
+            await client.query("ROLLBACK");
+
+            return res.status(404).json({
+                error: "Квест не найден."
+            });
+        }
+
+        await client.query(
+            `
+            DELETE FROM quest_claims
+            WHERE quest_id = $1
+            `,
+            [id]
+        );
+
+        await client.query(
+            `
+            DELETE FROM quests
+            WHERE id = $1
+            `,
+            [id]
+        );
+
+        await client.query("COMMIT");
+
+        io.emit("quests:update");
+
+        res.json({
+            success: true
+        });
+    } catch (error) {
+        try {
+            await client.query("ROLLBACK");
+        } catch (_) {}
+
+        console.error("ADMIN DELETE QUEST ERROR:", error);
+
+        res.status(500).json({
+            error: "Ошибка удаления квеста."
+        });
+    } finally {
+        client.release();
+    }
+});
+
+app.get("/api/admin/status", admin, async (req, res) => {
+    try {
+        const users = await query(`
+            SELECT COUNT(*)::INTEGER AS count
+            FROM users
+        `);
+
+        const ranks = await query(`
+            SELECT COUNT(*)::INTEGER AS count
+            FROM ranks
+        `);
+
+        const quests = await query(`
+            SELECT COUNT(*)::INTEGER AS count
+            FROM quests
+        `);
+
+        res.json({
+            success: true,
+            admin: true,
+            statistics: {
+                users: users.rows[0].count,
+                ranks: ranks.rows[0].count,
+                quests: quests.rows[0].count
+            }
+        });
+    } catch (error) {
+        console.error("ADMIN STATUS ERROR:", error);
+
+        res.status(500).json({
+            error: "Ошибка статистики."
+        });
+    }
+});
+
+io.on("connection", socket => {
+    console.log("ASTRO: клиент подключился:", socket.id);
+
+    socket.on("disconnect", () => {
+        console.log("ASTRO: клиент отключился:", socket.id);
     });
+});
+
+app.use((req, res, next) => {
+    if (
+        req.path.startsWith("/api/") ||
+        req.path.startsWith("/socket.io/")
+    ) {
+        return next();
+    }
+
+    next();
+});
+
+const publicPath = path.join(__dirname, "public");
+
+app.use(express.static(publicPath));
+
+app.get("*", (req, res, next) => {
+    if (
+        req.path.startsWith("/api/") ||
+        req.path.startsWith("/socket.io/")
+    ) {
+        return next();
+    }
+
+    res.sendFile(path.join(publicPath, "index.html"));
+});
+
+app.use((err, req, res, next) => {
+    console.error("EXPRESS ERROR:", err);
+
+    res.status(500).json({
+        error: "Внутренняя ошибка сервера."
+    });
+});
+
+async function start() {
+    try {
+        await initDatabase();
+
+        server.listen(PORT, "0.0.0.0", () => {
+            console.log("====================================");
+            console.log("ASTRO ONLINE SERVER");
+            console.log("PORT:", PORT);
+            console.log("DATABASE: PostgreSQL");
+            console.log("STATUS: ONLINE");
+            console.log("====================================");
+        });
+    } catch (error) {
+        console.error("====================================");
+        console.error("FATAL SERVER ERROR:");
+        console.error(error);
+        console.error("====================================");
+
+        process.exit(1);
+    }
 }
 
-process.on("SIGINT", shutdown);
-process.on("SIGTERM", shutdown);
-```
+process.on("unhandledRejection", error => {
+    console.error("UNHANDLED REJECTION:", error);
+});
+
+process.on("uncaughtException", error => {
+    console.error("UNCAUGHT EXCEPTION:", error);
+});
+
+process.on("SIGTERM", async () => {
+    console.log("ASTRO: SIGTERM");
+
+    try {
+        await pool.end();
+    } catch (_) {}
+
+    process.exit(0);
+});
+
+start();

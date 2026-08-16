@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>ASTRO ONLINE</title>
 
+<script src="/socket.io/socket.io.js"></script>
+
 <style>
 *{
     box-sizing:border-box;
@@ -21,10 +23,6 @@ html,body{
 body{
     overflow-x:hidden;
 }
-
-/* =========================
-   КОСМОС
-========================= */
 
 .space{
     position:fixed;
@@ -63,7 +61,6 @@ body{
     from{
         transform:translate3d(0,0,0);
     }
-
     to{
         transform:translate3d(250px,500px,0);
     }
@@ -105,15 +102,10 @@ body{
     from{
         transform:translate(0,0) scale(1);
     }
-
     to{
         transform:translate(80px,-50px) scale(1.15);
     }
 }
-
-/* =========================
-   HEADER
-========================= */
 
 header{
     position:sticky;
@@ -122,7 +114,6 @@ header{
     display:flex;
     align-items:center;
     justify-content:space-between;
-    gap:15px;
     padding:16px 28px;
     border-bottom:1px solid rgba(255,255,255,.1);
     background:rgba(4,4,15,.72);
@@ -143,7 +134,6 @@ nav{
     display:flex;
     gap:8px;
     flex-wrap:wrap;
-    justify-content:flex-end;
 }
 
 button{
@@ -179,39 +169,10 @@ button{
     box-shadow:0 0 18px rgba(150,60,255,.35);
 }
 
-/* =========================
-   MAIN
-========================= */
-
 main{
     width:min(1200px,94%);
     margin:30px auto 80px;
 }
-
-.section{
-    display:none;
-    animation:sectionIn .4s ease;
-}
-
-.section.active{
-    display:block;
-}
-
-@keyframes sectionIn{
-    from{
-        opacity:0;
-        transform:translateY(15px);
-    }
-
-    to{
-        opacity:1;
-        transform:translateY(0);
-    }
-}
-
-/* =========================
-   HERO
-========================= */
 
 .hero{
     min-height:330px;
@@ -238,7 +199,6 @@ main{
     from{
         filter:brightness(1);
     }
-
     to{
         filter:brightness(1.35);
     }
@@ -248,7 +208,6 @@ main{
     color:#aeb2d5;
     font-size:18px;
     max-width:650px;
-    line-height:1.6;
 }
 
 .hero-buttons{
@@ -257,10 +216,6 @@ main{
     flex-wrap:wrap;
     justify-content:center;
 }
-
-/* =========================
-   BUTTONS
-========================= */
 
 .primary{
     padding:14px 25px;
@@ -277,15 +232,25 @@ main{
         0 0 45px rgba(150,70,255,.55);
 }
 
-.primary:active,
-.action-btn:active,
-.nav-btn:active{
-    transform:scale(.97);
+.section{
+    display:none;
+    animation:sectionIn .4s ease;
 }
 
-/* =========================
-   CARDS
-========================= */
+.section.active{
+    display:block;
+}
+
+@keyframes sectionIn{
+    from{
+        opacity:0;
+        transform:translateY(15px);
+    }
+    to{
+        opacity:1;
+        transform:translateY(0);
+    }
+}
 
 .grid{
     display:grid;
@@ -319,10 +284,6 @@ main{
     color:#9296ba;
 }
 
-/* =========================
-   PROFILE
-========================= */
-
 .profile{
     display:grid;
     grid-template-columns:1fr 2fr;
@@ -354,38 +315,15 @@ main{
     float:right;
 }
 
-/* =========================
-   RANK
-========================= */
-
 .rank{
-    border-left:4px solid var(--rank,#8c5cff);
+    border-left:4px solid var(--rank);
 }
 
 .rank-icon{
     font-size:40px;
-    color:var(--rank,#8c5cff);
-    text-shadow:0 0 18px var(--rank,#8c5cff);
+    color:var(--rank);
+    text-shadow:0 0 18px var(--rank);
 }
-
-.current-rank{
-    padding:20px;
-    margin-top:15px;
-    border-radius:18px;
-    border:1px solid rgba(170,100,255,.35);
-    background:
-        linear-gradient(
-            135deg,
-            rgba(100,50,255,.18),
-            rgba(255,30,200,.08)
-        );
-    box-shadow:
-        0 0 25px rgba(120,70,255,.15);
-}
-
-/* =========================
-   TABLE
-========================= */
 
 .table-wrap{
     overflow-x:auto;
@@ -411,13 +349,19 @@ tr:hover{
     background:rgba(116,70,255,.12);
 }
 
-/* =========================
-   AUTH
-========================= */
-
 .auth{
     max-width:430px;
     margin:50px auto;
+}
+
+.auth h2{
+    text-align:center;
+}
+
+.auth-divider{
+    height:1px;
+    background:rgba(255,255,255,.1);
+    margin:25px 0;
 }
 
 input,
@@ -433,11 +377,6 @@ select{
     background:rgba(0,0,0,.3);
 }
 
-textarea{
-    min-height:100px;
-    resize:vertical;
-}
-
 input:focus,
 textarea:focus,
 select:focus{
@@ -445,9 +384,10 @@ select:focus{
     box-shadow:0 0 15px rgba(120,80,255,.2);
 }
 
-/* =========================
-   ADMIN
-========================= */
+textarea{
+    min-height:100px;
+    resize:vertical;
+}
 
 .admin-panel{
     border:1px solid rgba(200,120,255,.25);
@@ -496,19 +436,29 @@ select:focus{
     box-shadow:0 0 20px rgba(255,50,80,.3);
 }
 
-/* =========================
-   TOAST
-========================= */
+.success{
+    color:#75ffbf;
+}
+
+.error-box{
+    padding:14px;
+    margin-top:12px;
+    border-radius:12px;
+    background:rgba(255,40,70,.1);
+    border:1px solid rgba(255,50,80,.3);
+    color:#ff9aa9;
+    display:none;
+}
 
 #toast{
     position:fixed;
     right:20px;
     bottom:20px;
     z-index:9999;
-    max-width:400px;
+    max-width:420px;
     padding:15px 20px;
     border-radius:14px;
-    background:rgba(20,20,35,.95);
+    background:rgba(20,20,35,.97);
     border:1px solid rgba(255,255,255,.15);
     box-shadow:0 0 30px rgba(100,60,255,.3);
     transform:translateY(120px);
@@ -521,28 +471,10 @@ select:focus{
     opacity:1;
 }
 
-/* =========================
-   STATUS
-========================= */
-
-.status-online{
-    display:inline-flex;
-    align-items:center;
-    gap:7px;
-    color:#6dffb4;
+.loading{
+    opacity:.6;
+    pointer-events:none;
 }
-
-.status-dot{
-    width:8px;
-    height:8px;
-    border-radius:50%;
-    background:#6dffb4;
-    box-shadow:0 0 12px #6dffb4;
-}
-
-/* =========================
-   MOBILE
-========================= */
 
 @media(max-width:700px){
 
@@ -551,16 +483,16 @@ select:focus{
         gap:12px;
     }
 
-    nav{
-        justify-content:center;
-    }
-
     .profile{
         grid-template-columns:1fr;
     }
 
     .hero h1{
         letter-spacing:5px;
+    }
+
+    nav{
+        justify-content:center;
     }
 }
 </style>
@@ -623,12 +555,9 @@ select:focus{
 
 <main>
 
-<!-- =========================
-     HOME
-========================= -->
+<!-- HOME -->
 
-<section id="home"
-         class="section active">
+<section id="home" class="section active">
 
     <div class="hero">
 
@@ -636,8 +565,7 @@ select:focus{
 
         <p>
             Добро пожаловать в ASTRO ONLINE —
-            космическую систему рейтингов,
-            рангов, ELO и квестов.
+            космическую систему рейтингов, рангов и квестов.
         </p>
 
         <div class="hero-buttons">
@@ -659,139 +587,122 @@ select:focus{
     <div class="grid">
 
         <div class="card">
-
-            <h3>
-                🏆 Рейтинг
-            </h3>
-
+            <h3>🏆 Рейтинг</h3>
             <p class="muted">
-                Поднимай ELO и становись
-                первым игроком ASTRO.
+                Поднимай ELO и становись первым игроком ASTRO.
             </p>
-
         </div>
 
         <div class="card">
-
-            <h3>
-                💎 Ранги
-            </h3>
-
+            <h3>💎 Ранги</h3>
             <p class="muted">
-                Покупай уникальные ранги
-                и получай новый статус.
+                Покупай и собирай уникальные ранги.
             </p>
-
         </div>
 
         <div class="card">
-
-            <h3>
-                🚀 Квесты
-            </h3>
-
+            <h3>🚀 Квесты</h3>
             <p class="muted">
-                Выполняй задания и получай
-                деньги и XP.
+                Выполняй задания и получай награды.
             </p>
-
         </div>
 
     </div>
 
 </section>
 
-<!-- =========================
-     LOGIN
-========================= -->
+<!-- LOGIN -->
 
-<section id="login"
-         class="section">
+<section id="login" class="section">
 
     <div class="card auth">
 
-        <h2>
-            🔐 Вход в ASTRO
-        </h2>
+        <h2>🔐 Вход в ASTRO</h2>
 
         <input
             id="loginEmail"
             type="email"
+            autocomplete="email"
             placeholder="Email">
 
         <input
             id="loginPassword"
             type="password"
+            autocomplete="current-password"
             placeholder="Пароль">
 
-        <button class="primary"
-                style="width:100%"
-                onclick="login()">
+        <button
+            id="loginButton"
+            class="primary"
+            style="width:100%"
+            onclick="login()">
 
-            Авторизоваться
+            Войти
 
         </button>
 
-        <hr style="
-            border-color:rgba(255,255,255,.08);
-            margin:25px 0;
-        ">
+        <div
+            id="loginError"
+            class="error-box">
+        </div>
 
-        <h3>
-            📝 Создать аккаунт
-        </h3>
+        <div class="auth-divider"></div>
+
+        <h3>Создать аккаунт</h3>
 
         <input
             id="regUsername"
+            autocomplete="username"
             placeholder="Никнейм">
 
         <input
             id="regEmail"
             type="email"
+            autocomplete="email"
             placeholder="Email">
 
         <input
             id="regPassword"
             type="password"
+            autocomplete="new-password"
             placeholder="Пароль">
 
-        <button class="action-btn"
-                style="width:100%"
-                onclick="register()">
+        <button
+            id="registerButton"
+            class="action-btn"
+            style="width:100%"
+            onclick="register()">
 
             Создать аккаунт
 
         </button>
 
+        <div
+            id="registerError"
+            class="error-box">
+        </div>
+
     </div>
 
 </section>
 
-<!-- =========================
-     PROFILE
-========================= -->
+<!-- PROFILE -->
 
-<section id="profile"
-         class="section">
+<section id="profile" class="section">
 
-    <h2>
-        👤 Профиль
-    </h2>
+    <h2>👤 Профиль</h2>
 
     <div id="profileContent">
 
         <div class="card">
 
             <p class="muted">
-                Войди в аккаунт,
-                чтобы открыть профиль.
+                Войди в аккаунт, чтобы открыть профиль.
             </p>
 
             <button class="primary"
                     onclick="showSection('login')">
-
                 Войти
-
             </button>
 
         </div>
@@ -800,19 +711,13 @@ select:focus{
 
 </section>
 
-<!-- =========================
-     RANKS
-========================= -->
+<!-- RANKS -->
 
-<section id="ranks"
-         class="section">
+<section id="ranks" class="section">
 
-    <h2>
-        💎 Ранги ASTRO
-    </h2>
+    <h2>💎 Ранги ASTRO</h2>
 
-    <div id="ranksList"
-         class="grid">
+    <div id="ranksList" class="grid">
 
         <div class="card">
             Загрузка рангов...
@@ -822,19 +727,13 @@ select:focus{
 
 </section>
 
-<!-- =========================
-     QUESTS
-========================= -->
+<!-- QUESTS -->
 
-<section id="quests"
-         class="section">
+<section id="quests" class="section">
 
-    <h2>
-        🚀 Квесты
-    </h2>
+    <h2>🚀 Квесты</h2>
 
-    <div id="questsList"
-         class="grid">
+    <div id="questsList" class="grid">
 
         <div class="card">
             Загрузка квестов...
@@ -844,16 +743,11 @@ select:focus{
 
 </section>
 
-<!-- =========================
-     RATING
-========================= -->
+<!-- RATING -->
 
-<section id="rating"
-         class="section">
+<section id="rating" class="section">
 
-    <h2>
-        🏆 Рейтинг ASTRO
-    </h2>
+    <h2>🏆 Рейтинг ASTRO</h2>
 
     <div class="card table-wrap">
 
@@ -862,31 +756,11 @@ select:focus{
             <thead>
 
                 <tr>
-
-                    <th>
-                        #
-                    </th>
-
-                    <th>
-                        Игрок
-                    </th>
-
-                    <th>
-                        ELO
-                    </th>
-
-                    <th>
-                        XP
-                    </th>
-
-                    <th>
-                        Победы
-                    </th>
-
-                    <th>
-                        Ранг
-                    </th>
-
+                    <th>#</th>
+                    <th>Игрок</th>
+                    <th>ELO</th>
+                    <th>XP</th>
+                    <th>Победы</th>
                 </tr>
 
             </thead>
@@ -894,11 +768,9 @@ select:focus{
             <tbody id="ratingBody">
 
                 <tr>
-
-                    <td colspan="6">
+                    <td colspan="5">
                         Загрузка...
                     </td>
-
                 </tr>
 
             </tbody>
@@ -909,39 +781,35 @@ select:focus{
 
 </section>
 
-<!-- =========================
-     ADMIN
-========================= -->
+<!-- ADMIN -->
 
-<section id="admin"
-         class="section">
+<section id="admin" class="section">
 
     <div class="card admin-panel">
 
-        <h2>
-            ⚡ ASTRO ADMIN PANEL
-        </h2>
+        <h2>⚡ ASTRO ADMIN PANEL</h2>
 
         <p class="muted">
-            Управление игроками, ELO,
-            победами, балансом, рангами
-            и квестами.
+            Управление игроками, ELO, победами, рангами и квестами.
         </p>
 
         <div class="admin-tabs">
 
-            <button class="admin-tab active"
-                    onclick="adminTab('players',this)">
+            <button
+                class="admin-tab active"
+                onclick="adminTab('players',this)">
                 👥 Игроки
             </button>
 
-            <button class="admin-tab"
-                    onclick="adminTab('ranksAdmin',this)">
+            <button
+                class="admin-tab"
+                onclick="adminTab('ranksAdmin',this)">
                 💎 Ранги
             </button>
 
-            <button class="admin-tab"
-                    onclick="adminTab('questsAdmin',this)">
+            <button
+                class="admin-tab"
+                onclick="adminTab('questsAdmin',this)">
                 🚀 Квесты
             </button>
 
@@ -949,24 +817,22 @@ select:focus{
 
         <!-- PLAYERS -->
 
-        <div id="players"
-             class="admin-content active">
+        <div
+            id="players"
+            class="admin-content active">
 
             <div class="card">
 
-                <h3>
-                    🔎 Найти игрока
-                </h3>
+                <h3>Найти игрока</h3>
 
                 <input
                     id="adminSearch"
-                    placeholder="Никнейм">
+                    placeholder="Введите никнейм">
 
-                <button class="primary"
-                        onclick="searchPlayers()">
-
+                <button
+                    class="primary"
+                    onclick="searchPlayers()">
                     Найти
-
                 </button>
 
             </div>
@@ -977,20 +843,18 @@ select:focus{
 
         <!-- RANKS ADMIN -->
 
-        <div id="ranksAdmin"
-             class="admin-content">
+        <div
+            id="ranksAdmin"
+            class="admin-content">
 
             <div class="card">
 
-                <h3>
-                    ➕ Создать ранг
-                </h3>
+                <h3>➕ Создать ранг</h3>
 
                 <div class="row">
 
                     <div>
                         <label>ID</label>
-
                         <input
                             id="newRankId"
                             placeholder="legend">
@@ -998,7 +862,6 @@ select:focus{
 
                     <div>
                         <label>Название</label>
-
                         <input
                             id="newRankName"
                             placeholder="LEGEND">
@@ -1006,7 +869,6 @@ select:focus{
 
                     <div>
                         <label>Титул</label>
-
                         <input
                             id="newRankTitle"
                             placeholder="Легендарный">
@@ -1014,7 +876,6 @@ select:focus{
 
                     <div>
                         <label>Цена</label>
-
                         <input
                             id="newRankPrice"
                             type="number"
@@ -1023,7 +884,6 @@ select:focus{
 
                     <div>
                         <label>Цвет</label>
-
                         <input
                             id="newRankColor"
                             value="#ff4fd8">
@@ -1031,7 +891,6 @@ select:focus{
 
                     <div>
                         <label>Иконка</label>
-
                         <input
                             id="newRankIcon"
                             value="★">
@@ -1041,11 +900,10 @@ select:focus{
 
                 <br>
 
-                <button class="primary"
-                        onclick="createRank()">
-
+                <button
+                    class="primary"
+                    onclick="createRank()">
                     Создать ранг
-
                 </button>
 
             </div>
@@ -1056,14 +914,13 @@ select:focus{
 
         <!-- QUEST ADMIN -->
 
-        <div id="questsAdmin"
-             class="admin-content">
+        <div
+            id="questsAdmin"
+            class="admin-content">
 
             <div class="card">
 
-                <h3>
-                    ➕ Создать квест
-                </h3>
+                <h3>➕ Создать квест</h3>
 
                 <input
                     id="newQuestId"
@@ -1081,9 +938,7 @@ select:focus{
 
                     <div>
 
-                        <label>
-                            Награда
-                        </label>
+                        <label>Награда</label>
 
                         <input
                             id="newQuestReward"
@@ -1094,9 +949,7 @@ select:focus{
 
                     <div>
 
-                        <label>
-                            XP
-                        </label>
+                        <label>XP</label>
 
                         <input
                             id="newQuestXp"
@@ -1109,11 +962,10 @@ select:focus{
 
                 <br>
 
-                <button class="primary"
-                        onclick="createQuest()">
-
+                <button
+                    class="primary"
+                    onclick="createQuest()">
                     Создать квест
-
                 </button>
 
             </div>
@@ -1132,60 +984,141 @@ select:focus{
 
 <script>
 
-/* =========================================================
-   ASTRO CLIENT
-========================================================= */
-
-let token = localStorage.getItem("astro_token");
+let token = localStorage.getItem("astro_token") || null;
 let me = null;
 
-/* =========================================================
+let socket = null;
+
+try{
+
+    if(typeof io === "function"){
+
+        socket = io();
+
+        socket.on("ranks:update",()=>{
+            loadRanks();
+        });
+
+        socket.on("quests:update",()=>{
+            loadQuests();
+        });
+
+        socket.on("leaderboard:update",()=>{
+            loadRating();
+        });
+
+    }
+
+}catch(error){
+
+    console.warn("Socket.IO unavailable:",error);
+
+}
+
+
+/* =========================
    TOAST
-========================================================= */
+========================= */
+
+let toastTimer = null;
 
 function toast(text){
 
-    const el =
-        document.getElementById("toast");
+    const el = document.getElementById("toast");
 
-    if(!el){
-        alert(text);
-        return;
-    }
+    if(!el) return;
 
-    el.textContent = text;
+    el.textContent = String(text);
 
     el.classList.add("show");
 
-    setTimeout(function(){
+    clearTimeout(toastTimer);
 
+    toastTimer = setTimeout(()=>{
         el.classList.remove("show");
-
-    },3000);
+    },3500);
 }
 
-/* =========================================================
-   NAVIGATION
-========================================================= */
+
+/* =========================
+   ERROR BOX
+========================= */
+
+function showLoginError(text){
+
+    const box =
+        document.getElementById("loginError");
+
+    if(!box) return;
+
+    box.textContent = String(text);
+
+    box.style.display = "block";
+}
+
+
+function hideLoginError(){
+
+    const box =
+        document.getElementById("loginError");
+
+    if(!box) return;
+
+    box.textContent = "";
+
+    box.style.display = "none";
+}
+
+
+function showRegisterError(text){
+
+    const box =
+        document.getElementById("registerError");
+
+    if(!box) return;
+
+    box.textContent = String(text);
+
+    box.style.display = "block";
+}
+
+
+function hideRegisterError(){
+
+    const box =
+        document.getElementById("registerError");
+
+    if(!box) return;
+
+    box.textContent = "";
+
+    box.style.display = "none";
+}
+
+
+/* =========================
+   SECTION
+========================= */
 
 function showSection(id){
 
     document
         .querySelectorAll(".section")
-        .forEach(function(section){
-
+        .forEach(section=>{
             section.classList.remove("active");
-
         });
 
     const section =
         document.getElementById(id);
 
-    if(section){
+    if(!section){
 
-        section.classList.add("active");
+        console.error("Section not found:",id);
 
+        return;
     }
+
+    section.classList.add("active");
 
     window.scrollTo({
         top:0,
@@ -1210,68 +1143,111 @@ function showSection(id){
 
 }
 
-/* =========================================================
+
+/* =========================
+   ADMIN
+========================= */
+
+function showAdmin(){
+
+    if(!token){
+
+        toast("🔐 Сначала войдите в аккаунт");
+
+        showSection("login");
+
+        return;
+    }
+
+    showSection("admin");
+
+    loadAdmin();
+
+}
+
+
+/* =========================
    API
-========================================================= */
+========================= */
 
 async function api(url,options={}){
 
-    const headers = {
-        ...(options.headers || {})
+    const requestOptions = {
+        ...options,
+        headers:{
+            ...(options.headers || {})
+        }
     };
 
-    /*
-       Content-Type ставим только если
-       отправляется JSON.
-    */
+    if(
+        requestOptions.body &&
+        typeof requestOptions.body !== "string"
+    ){
 
-    if(options.body){
+        requestOptions.body =
+            JSON.stringify(requestOptions.body);
 
-        headers["Content-Type"] =
+    }
+
+    if(
+        requestOptions.body &&
+        !requestOptions.headers["Content-Type"]
+    ){
+
+        requestOptions.headers["Content-Type"] =
             "application/json";
 
     }
 
     if(token){
 
-        headers["Authorization"] =
+        requestOptions.headers.Authorization =
             "Bearer " + token;
 
     }
 
-    const response =
-        await fetch(url,{
-            ...options,
-            headers
-        });
+    let response;
+
+    try{
+
+        response =
+            await fetch(url,requestOptions);
+
+    }catch(error){
+
+        throw new Error(
+            "Не удалось подключиться к серверу"
+        );
+
+    }
+
+    const text =
+        await response.text();
 
     let data = {};
 
-    const contentType =
-        response.headers.get("content-type") || "";
-
-    if(contentType.includes("application/json")){
+    if(text){
 
         try{
 
-            data = await response.json();
+            data = JSON.parse(text);
 
         }catch(error){
 
-            data = {};
+            if(!response.ok){
 
-        }
+                throw new Error(
+                    "Ошибка сервера " +
+                    response.status +
+                    ": " +
+                    text.substring(0,200)
+                );
 
-    }else{
+            }
 
-        const text =
-            await response.text();
-
-        if(text){
-
-            data = {
-                error:text
-            };
+            throw new Error(
+                "Сервер вернул неправильный ответ"
+            );
 
         }
 
@@ -1279,23 +1255,45 @@ async function api(url,options={}){
 
     if(!response.ok){
 
+        if(
+            response.status === 401 &&
+            url !== "/api/login" &&
+            url !== "/api/register"
+        ){
+
+            token = null;
+            me = null;
+
+            localStorage.removeItem(
+                "astro_token"
+            );
+
+        }
+
         throw new Error(
             data.error ||
             data.message ||
-            "Ошибка сервера: HTTP " +
+            "Ошибка сервера: " +
             response.status
         );
 
     }
 
     return data;
+
 }
 
-/* =========================================================
+
+/* =========================
    LOGIN
-========================================================= */
+========================= */
 
 async function login(){
+
+    hideLoginError();
+
+    const button =
+        document.getElementById("loginButton");
 
     const email =
         document
@@ -1308,68 +1306,163 @@ async function login(){
             .getElementById("loginPassword")
             .value;
 
-    if(!email || !password){
+    if(!email){
 
-        toast("Введите email и пароль.");
+        showLoginError(
+            "Введите email"
+        );
+
+        toast("Введите email");
 
         return;
     }
 
+    if(!password){
+
+        showLoginError(
+            "Введите пароль"
+        );
+
+        toast("Введите пароль");
+
+        return;
+    }
+
+    button.classList.add("loading");
+
+    button.disabled = true;
+
+    button.textContent = "Вход...";
+
     try{
+
+        /*
+         * ВАЖНО:
+         * Отправляем именно:
+         * email
+         * password
+         */
 
         const data =
             await api("/api/login",{
 
                 method:"POST",
 
-                body:JSON.stringify({
-
+                body:{
                     email:email,
-
                     password:password
-
-                })
+                }
 
             });
 
-        if(!data.token){
+
+        if(!data){
 
             throw new Error(
-                "Сервер не вернул токен."
+                "Пустой ответ сервера"
             );
 
         }
 
+
+        if(!data.token){
+
+            console.error(
+                "LOGIN RESPONSE:",
+                data
+            );
+
+            throw new Error(
+                "Сервер не вернул токен авторизации"
+            );
+
+        }
+
+
         token = data.token;
 
         me = data.user || null;
+
 
         localStorage.setItem(
             "astro_token",
             token
         );
 
-        toast("Авторизация успешна!");
 
-        await loadProfile();
+        toast("✅ Авторизация успешна!");
+
+
+        /*
+         * Проверяем токен через /api/me.
+         * Если этот маршрут работает,
+         * авторизация действительно прошла.
+         */
+
+        try{
+
+            await loadProfile();
+
+        }catch(error){
+
+            console.warn(
+                "Profile load after login:",
+                error
+            );
+
+        }
+
 
         showSection("profile");
 
+
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "LOGIN ERROR:",
+            error
+        );
 
-        toast(error.message);
+        showLoginError(
+            error.message ||
+            "Ошибка авторизации"
+        );
+
+        toast(
+            "❌ " +
+            (
+                error.message ||
+                "Ошибка авторизации"
+            )
+        );
+
+    }finally{
+
+        button.classList.remove(
+            "loading"
+        );
+
+        button.disabled = false;
+
+        button.textContent = "Войти";
 
     }
 
 }
 
-/* =========================================================
+
+/* =========================
    REGISTER
-========================================================= */
+========================= */
 
 async function register(){
+
+    hideRegisterError();
+
+    const button =
+        document.getElementById(
+            "registerButton"
+        );
 
     const username =
         document
@@ -1388,35 +1481,73 @@ async function register(){
             .getElementById("regPassword")
             .value;
 
+
     if(!username){
 
-        toast("Введите никнейм.");
+        showRegisterError(
+            "Введите никнейм"
+        );
+
+        toast("Введите никнейм");
 
         return;
     }
 
-    if(!email){
 
-        toast("Введите email.");
+    if(username.length < 3){
 
-        return;
-    }
-
-    if(!password){
-
-        toast("Введите пароль.");
-
-        return;
-    }
-
-    if(password.length < 4){
-
-        toast(
-            "Пароль должен быть минимум 4 символа."
+        showRegisterError(
+            "Никнейм должен содержать минимум 3 символа"
         );
 
         return;
     }
+
+
+    if(!email){
+
+        showRegisterError(
+            "Введите email"
+        );
+
+        toast("Введите email");
+
+        return;
+    }
+
+
+    if(!password){
+
+        showRegisterError(
+            "Введите пароль"
+        );
+
+        toast("Введите пароль");
+
+        return;
+    }
+
+
+    if(password.length < 6){
+
+        showRegisterError(
+            "Пароль должен содержать минимум 6 символов"
+        );
+
+        toast(
+            "Пароль слишком короткий"
+        );
+
+        return;
+    }
+
+
+    button.classList.add("loading");
+
+    button.disabled = true;
+
+    button.textContent = "Создание...";
+
 
     try{
 
@@ -1425,74 +1556,99 @@ async function register(){
 
                 method:"POST",
 
-                body:JSON.stringify({
-
+                body:{
                     username:username,
-
                     email:email,
-
                     password:password
-
-                })
+                }
 
             });
 
-        if(!data.token){
+
+        if(!data){
 
             throw new Error(
-                "Сервер не вернул токен."
+                "Пустой ответ сервера"
             );
 
         }
 
+
+        if(!data.token){
+
+            console.error(
+                "REGISTER RESPONSE:",
+                data
+            );
+
+            throw new Error(
+                "Аккаунт создан, но сервер не вернул токен"
+            );
+
+        }
+
+
         token = data.token;
 
         me = data.user || null;
+
 
         localStorage.setItem(
             "astro_token",
             token
         );
 
-        toast("Аккаунт создан!");
+
+        toast(
+            "✅ Аккаунт успешно создан!"
+        );
+
 
         await loadProfile();
 
+
         showSection("profile");
+
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "REGISTER ERROR:",
+            error
+        );
 
-        toast(error.message);
+        showRegisterError(
+            error.message ||
+            "Ошибка регистрации"
+        );
+
+        toast(
+            "❌ " +
+            (
+                error.message ||
+                "Ошибка регистрации"
+            )
+        );
+
+    }finally{
+
+        button.classList.remove(
+            "loading"
+        );
+
+        button.disabled = false;
+
+        button.textContent =
+            "Создать аккаунт";
 
     }
 
 }
 
-/* =========================================================
-   LOGOUT
-========================================================= */
 
-function logout(){
-
-    token = null;
-
-    me = null;
-
-    localStorage.removeItem(
-        "astro_token"
-    );
-
-    toast("Вы вышли из аккаунта.");
-
-    showSection("home");
-
-}
-
-/* =========================================================
+/* =========================
    PROFILE
-========================================================= */
+========================= */
 
 async function loadProfile(){
 
@@ -1504,9 +1660,7 @@ async function loadProfile(){
     if(!token){
 
         box.innerHTML = `
-
             <div class="card">
-
                 <p class="muted">
                     Войдите в аккаунт,
                     чтобы открыть профиль.
@@ -1515,160 +1669,55 @@ async function loadProfile(){
                 <button
                     class="primary"
                     onclick="showSection('login')">
-
                     Войти
-
                 </button>
-
             </div>
-
         `;
 
         return;
+
     }
+
 
     try{
 
         const data =
             await api("/api/me");
 
-        me = data.user || data;
 
-        const user = me;
+        if(data.user){
+
+            me = data.user;
+
+        }
+
+
+        if(!me){
+
+            throw new Error(
+                "Сервер не вернул данные пользователя"
+            );
+
+        }
+
 
         const username =
-            user.username || "Игрок";
+            String(
+                me.username || "Игрок"
+            );
 
-        const initial =
+
+        const firstLetter =
             username
                 .charAt(0)
                 .toUpperCase();
 
-        const elo =
-            Number(user.elo || 0);
-
-        const xp =
-            Number(user.xp || 0);
-
-        const wins =
-            Number(user.wins || 0);
-
-        const balance =
-            Number(user.balance || 0);
-
-        /*
-           Поддерживаются разные названия
-           поля ранга на сервере.
-        */
 
         const rank =
-            user.rank ||
-            user.currentRank ||
-            user.rankName ||
+            me.rank ||
+            me.currentRank ||
             null;
 
-        let rankHtml = "";
-
-        if(rank){
-
-            const rankName =
-                typeof rank === "object"
-                    ? (
-                        rank.name ||
-                        rank.title ||
-                        "Без ранга"
-                    )
-                    : rank;
-
-            const rankIcon =
-                typeof rank === "object"
-                    ? (
-                        rank.icon ||
-                        "★"
-                    )
-                    : "★";
-
-            const rankColor =
-                typeof rank === "object"
-                    ? (
-                        rank.color ||
-                        "#9b6cff"
-                    )
-                    : "#9b6cff";
-
-            rankHtml = `
-
-                <div
-                    class="current-rank"
-                    style="
-                        border-color:${escapeAttr(rankColor)};
-                    ">
-
-                    <div
-                        style="
-                            font-size:42px;
-                            color:${escapeAttr(rankColor)};
-                            text-shadow:0 0 20px ${escapeAttr(rankColor)};
-                        ">
-
-                        ${escapeHtml(rankIcon)}
-
-                    </div>
-
-                    <div
-                        style="
-                            font-size:22px;
-                            font-weight:bold;
-                            margin-top:5px;
-                        ">
-
-                        ${escapeHtml(rankName)}
-
-                    </div>
-
-                    <div class="muted">
-                        Текущий ранг
-                    </div>
-
-                </div>
-
-            `;
-
-        }else{
-
-            rankHtml = `
-
-                <div class="current-rank">
-
-                    <div
-                        style="
-                            font-size:40px;
-                        ">
-
-                        🪐
-
-                    </div>
-
-                    <div
-                        style="
-                            font-size:20px;
-                            font-weight:bold;
-                        ">
-
-                        Без ранга
-
-                    </div>
-
-                    <div class="muted">
-                        Посети раздел «Ранги»,
-                        чтобы выбрать ранг.
-                    </div>
-
-                </div>
-
-            `;
-
-        }
 
         box.innerHTML = `
 
@@ -1677,88 +1726,127 @@ async function loadProfile(){
                 <div class="card">
 
                     <div class="avatar">
-
-                        ${escapeHtml(initial)}
-
+                        ${escapeHtml(firstLetter)}
                     </div>
 
-                    <h2
-                        style="text-align:center">
-
+                    <h2 style="text-align:center">
                         ${escapeHtml(username)}
-
                     </h2>
 
                     <p
                         class="muted"
                         style="text-align:center">
-
                         ${escapeHtml(
-                            user.email || ""
+                            me.email || ""
                         )}
-
                     </p>
 
-                    ${rankHtml}
+                    ${
+                        rank
+                        ?
+                        `
+                        <div
+                            class="card"
+                            style="
+                                margin-top:20px;
+                                text-align:center;
+                                border-color:${escapeAttr(
+                                    rank.color ||
+                                    "#9b7cff"
+                                )};
+                            ">
+
+                            <div
+                                style="
+                                    font-size:40px;
+                                    color:${escapeAttr(
+                                        rank.color ||
+                                        "#9b7cff"
+                                    )};
+                                ">
+                                ${escapeHtml(
+                                    rank.icon || "★"
+                                )}
+                            </div>
+
+                            <h3>
+                                ${escapeHtml(
+                                    rank.name ||
+                                    "Без ранга"
+                                )}
+                            </h3>
+
+                            <p class="muted">
+                                ${escapeHtml(
+                                    rank.title || ""
+                                )}
+                            </p>
+
+                        </div>
+                        `
+                        :
+                        `
+                        <div class="stat">
+                            💎 Ранг
+                            <b>Без ранга</b>
+                        </div>
+                        `
+                    }
 
                 </div>
 
                 <div class="card">
 
                     <div class="stat">
-
                         💰 Баланс
-
                         <b>
-                            ${balance.toLocaleString()}
+                            ${Number(
+                                me.balance || 0
+                            ).toLocaleString()}
+                            ₽
                         </b>
-
                     </div>
 
                     <div class="stat">
-
                         🏆 ELO
-
                         <b>
-                            ${elo.toLocaleString()}
+                            ${Number(
+                                me.elo || 0
+                            ).toLocaleString()}
                         </b>
-
                     </div>
 
                     <div class="stat">
-
                         ⭐ XP
-
                         <b>
-                            ${xp.toLocaleString()}
+                            ${Number(
+                                me.xp || 0
+                            ).toLocaleString()}
                         </b>
-
                     </div>
 
                     <div class="stat">
-
                         ⚔️ Победы
-
                         <b>
-                            ${wins.toLocaleString()}
+                            ${Number(
+                                me.wins || 0
+                            ).toLocaleString()}
                         </b>
-
                     </div>
 
                     <div class="stat">
-
-                        💎 Рангов
-
+                        💎 Куплено рангов
                         <b>
                             ${
                                 Array.isArray(
-                                    user.ownedRanks
+                                    me.ownedRanks
                                 )
-                                ? user.ownedRanks.length
-                                : 0
+                                ?
+                                me.ownedRanks.length
+                                :
+                                0
                             }
                         </b>
-
                     </div>
 
                     <br>
@@ -1766,9 +1854,7 @@ async function loadProfile(){
                     <button
                         class="action-btn"
                         onclick="logout()">
-
                         Выйти
-
                     </button>
 
                 </div>
@@ -1777,51 +1863,73 @@ async function loadProfile(){
 
         `;
 
+
     }catch(error){
 
-        console.error(error);
-
-        token = null;
-
-        me = null;
-
-        localStorage.removeItem(
-            "astro_token"
+        console.error(
+            "PROFILE ERROR:",
+            error
         );
 
+
+        if(
+            error.message &&
+            (
+                error.message.includes("401") ||
+                error.message.includes("токен") ||
+                error.message.includes("автор")
+            )
+        ){
+
+            logout();
+
+            return;
+
+        }
+
+
         box.innerHTML = `
-
             <div class="card">
-
-                <h3>
-                    Сессия недействительна
-                </h3>
-
+                <b>Ошибка загрузки профиля</b>
                 <p class="muted">
-                    Войдите снова.
+                    ${escapeHtml(
+                        error.message
+                    )}
                 </p>
-
-                <button
-                    class="primary"
-                    onclick="showSection('login')">
-
-                    Войти
-
-                </button>
-
             </div>
-
         `;
-
-        toast(error.message);
 
     }
 
 }
 
-/* =========================================================
+
+/* =========================
+   LOGOUT
+========================= */
+
+function logout(){
+
+    token = null;
+
+    me = null;
+
+    localStorage.removeItem(
+        "astro_token"
+    );
+
+    toast(
+        "Вы вышли из аккаунта"
+    );
+
+    showSection("home");
+
+}
+
+
+/* =========================
    RANKS
-========================================================= */
+========================= */
 
 async function loadRanks(){
 
@@ -1830,9 +1938,7 @@ async function loadRanks(){
             "ranksList"
         );
 
-    if(!list){
-        return;
-    }
+    if(!list) return;
 
     try{
 
@@ -1840,158 +1946,111 @@ async function loadRanks(){
             await api("/api/ranks");
 
         const ranks =
-            Array.isArray(data)
-                ? data
-                : (
-                    data.ranks ||
-                    []
-                );
+            Array.isArray(data.ranks)
+            ?
+            data.ranks
+            :
+            [];
+
 
         if(!ranks.length){
 
             list.innerHTML = `
-
                 <div class="card">
-
-                    <h3>
-                        Пока нет рангов
-                    </h3>
-
-                    <p class="muted">
-                        Создай ранг через админку.
-                    </p>
-
+                    Пока нет созданных рангов.
                 </div>
-
             `;
 
             return;
+
         }
 
+
         list.innerHTML =
-            ranks.map(function(rank){
+            ranks.map(rank=>`
 
-                const id =
-                    rank.rankId ||
-                    rank.id;
+                <div
+                    class="card rank"
+                    style="--rank:${escapeAttr(
+                        rank.color || "#9b7cff"
+                    )}">
 
-                const name =
-                    rank.name ||
-                    rank.title ||
-                    id ||
-                    "Ранг";
-
-                const title =
-                    rank.title ||
-                    "Ранг ASTRO";
-
-                const price =
-                    Number(rank.price || 0);
-
-                const color =
-                    rank.color ||
-                    "#9b6cff";
-
-                const icon =
-                    rank.icon ||
-                    "★";
-
-                return `
-
-                    <div
-                        class="card rank"
-                        style="
-                            --rank:${escapeAttr(color)};
-                        ">
-
-                        <div class="rank-icon">
-
-                            ${escapeHtml(icon)}
-
-                        </div>
-
-                        <h3>
-
-                            ${escapeHtml(name)}
-
-                        </h3>
-
-                        <p class="muted">
-
-                            ${escapeHtml(title)}
-
-                        </p>
-
-                        <h3>
-
-                            ${price.toLocaleString()}
-                            ₽
-
-                        </h3>
-
-                        <button
-                            class="action-btn"
-                            onclick="buyRank('${escapeAttr(id)}')">
-
-                            💎 Купить
-
-                        </button>
-
+                    <div class="rank-icon">
+                        ${escapeHtml(
+                            rank.icon || "★"
+                        )}
                     </div>
 
-                `;
+                    <h3>
+                        ${escapeHtml(
+                            rank.name || "Ранг"
+                        )}
+                    </h3>
 
-            }).join("");
+                    <p class="muted">
+                        ${escapeHtml(
+                            rank.title || ""
+                        )}
+                    </p>
+
+                    <h3>
+                        ${Number(
+                            rank.price || 0
+                        ).toLocaleString()} ₽
+                    </h3>
+
+                    <button
+                        class="action-btn"
+                        onclick="buyRank('${escapeAttr(
+                            rank.rankId ||
+                            rank.id ||
+                            ""
+                        )}')">
+                        Купить
+                    </button>
+
+                </div>
+
+            `).join("");
+
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "RANKS ERROR:",
+            error
+        );
 
         list.innerHTML = `
-
             <div class="card">
-
-                <h3>
-                    Ошибка загрузки рангов
-                </h3>
-
+                <b>Ошибка загрузки рангов</b>
                 <p class="muted">
-                    ${escapeHtml(error.message)}
+                    ${escapeHtml(
+                        error.message
+                    )}
                 </p>
-
             </div>
-
         `;
 
     }
 
 }
 
-/* =========================================================
-   BUY RANK
-========================================================= */
 
 async function buyRank(id){
 
     if(!token){
 
         toast(
-            "Сначала войдите в аккаунт."
+            "🔐 Войдите в аккаунт"
         );
 
         showSection("login");
 
         return;
+
     }
 
-    if(!id){
-
-        toast(
-            "У ранга отсутствует ID."
-        );
-
-        return;
-    }
 
     try{
 
@@ -2005,33 +2064,44 @@ async function buyRank(id){
                 }
             );
 
+
         if(data.user){
 
             me = data.user;
 
         }
 
+
         toast(
-            "Ранг успешно куплен!"
+            "💎 Ранг успешно куплен!"
         );
+
 
         await loadProfile();
 
         await loadRanks();
 
+
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "BUY RANK ERROR:",
+            error
+        );
 
-        toast(error.message);
+        toast(
+            "❌ " +
+            error.message
+        );
 
     }
 
 }
 
-/* =========================================================
+
+/* =========================
    QUESTS
-========================================================= */
+========================= */
 
 async function loadQuests(){
 
@@ -2040,157 +2110,124 @@ async function loadQuests(){
             "questsList"
         );
 
-    if(!list){
-        return;
-    }
+    if(!list) return;
+
 
     try{
 
         const data =
             await api("/api/quests");
 
+
         const quests =
-            Array.isArray(data)
-                ? data
-                : (
-                    data.quests ||
-                    []
-                );
+            Array.isArray(data.quests)
+            ?
+            data.quests
+            :
+            [];
+
 
         if(!quests.length){
 
             list.innerHTML = `
+                <div class="card">
+                    Пока нет квестов.
+                </div>
+            `;
+
+            return;
+
+        }
+
+
+        list.innerHTML =
+            quests.map(q=>`
 
                 <div class="card">
 
                     <h3>
-                        🚀 Квестов пока нет
+                        🚀
+                        ${escapeHtml(
+                            q.title || "Квест"
+                        )}
                     </h3>
 
                     <p class="muted">
-                        Администратор ещё
-                        не создал квесты.
+                        ${escapeHtml(
+                            q.description || ""
+                        )}
                     </p>
+
+                    <div class="stat">
+                        💰 Награда
+                        <b>
+                            +${Number(
+                                q.reward || 0
+                            ).toLocaleString()}
+                        </b>
+                    </div>
+
+                    <div class="stat">
+                        ⭐ XP
+                        <b>
+                            +${Number(
+                                q.xp || 0
+                            ).toLocaleString()}
+                        </b>
+                    </div>
+
+                    <button
+                        class="action-btn"
+                        onclick="claimQuest('${escapeAttr(
+                            q.questId ||
+                            q.id ||
+                            ""
+                        )}')">
+                        Забрать награду
+                    </button>
 
                 </div>
 
-            `;
+            `).join("");
 
-            return;
-        }
-
-        list.innerHTML =
-            quests.map(function(q){
-
-                const id =
-                    q.questId ||
-                    q.id;
-
-                return `
-
-                    <div class="card">
-
-                        <h3>
-
-                            🚀
-                            ${escapeHtml(
-                                q.title ||
-                                "Квест"
-                            )}
-
-                        </h3>
-
-                        <p class="muted">
-
-                            ${escapeHtml(
-                                q.description ||
-                                ""
-                            )}
-
-                        </p>
-
-                        <div class="stat">
-
-                            💰 Награда
-
-                            <b>
-                                +${
-                                    Number(
-                                        q.reward || 0
-                                    ).toLocaleString()
-                                }
-                            </b>
-
-                        </div>
-
-                        <div class="stat">
-
-                            ⭐ XP
-
-                            <b>
-                                +${
-                                    Number(
-                                        q.xp || 0
-                                    ).toLocaleString()
-                                }
-                            </b>
-
-                        </div>
-
-                        <button
-                            class="action-btn"
-                            onclick="claimQuest('${escapeAttr(id)}')">
-
-                            🎁 Забрать награду
-
-                        </button>
-
-                    </div>
-
-                `;
-
-            }).join("");
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "QUESTS ERROR:",
+            error
+        );
 
         list.innerHTML = `
-
             <div class="card">
-
-                <h3>
-                    Ошибка загрузки квестов
-                </h3>
-
+                <b>Ошибка загрузки квестов</b>
                 <p class="muted">
-                    ${escapeHtml(error.message)}
+                    ${escapeHtml(
+                        error.message
+                    )}
                 </p>
-
             </div>
-
         `;
 
     }
 
 }
 
-/* =========================================================
-   CLAIM QUEST
-========================================================= */
 
 async function claimQuest(id){
 
     if(!token){
 
         toast(
-            "Сначала войдите в аккаунт."
+            "🔐 Войдите в аккаунт"
         );
 
         showSection("login");
 
         return;
+
     }
+
 
     try{
 
@@ -2204,33 +2241,44 @@ async function claimQuest(id){
                 }
             );
 
+
         if(data.user){
 
             me = data.user;
 
         }
 
+
         toast(
-            "Награда получена!"
+            "🚀 Награда получена!"
         );
+
 
         await loadProfile();
 
         await loadQuests();
 
+
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "CLAIM QUEST ERROR:",
+            error
+        );
 
-        toast(error.message);
+        toast(
+            "❌ " +
+            error.message
+        );
 
     }
 
 }
 
-/* =========================================================
+
+/* =========================
    RATING
-========================================================= */
+========================= */
 
 async function loadRating(){
 
@@ -2239,251 +2287,150 @@ async function loadRating(){
             "ratingBody"
         );
 
-    if(!body){
-        return;
-    }
+    if(!body) return;
+
 
     try{
 
         const data =
-            await api(
-                "/api/leaderboard"
-            );
+            await api("/api/leaderboard");
+
 
         const players =
-            Array.isArray(data)
-                ? data
-                : (
-                    data.players ||
-                    data.users ||
-                    []
-                );
+            Array.isArray(data.players)
+            ?
+            data.players
+            :
+            Array.isArray(data.users)
+            ?
+            data.users
+            :
+            [];
+
 
         if(!players.length){
 
             body.innerHTML = `
-
                 <tr>
-
-                    <td colspan="6">
-
+                    <td colspan="5">
                         Пока нет игроков.
+                    </td>
+                </tr>
+            `;
 
+            return;
+
+        }
+
+
+        body.innerHTML =
+            players.map((p,i)=>`
+
+                <tr class="${
+                    me &&
+                    me.id &&
+                    p.id &&
+                    String(me.id) ===
+                    String(p.id)
+                    ?
+                    "me"
+                    :
+                    ""
+                }">
+
+                    <td>
+                        ${
+                            i === 0
+                            ?
+                            "👑"
+                            :
+                            i + 1
+                        }
+                    </td>
+
+                    <td>
+                        <b>
+                            ${escapeHtml(
+                                p.username ||
+                                "Игрок"
+                            )}
+                        </b>
+                    </td>
+
+                    <td>
+                        <b>
+                            ${Number(
+                                p.elo || 0
+                            ).toLocaleString()}
+                        </b>
+                    </td>
+
+                    <td>
+                        ${Number(
+                            p.xp || 0
+                        ).toLocaleString()}
+                    </td>
+
+                    <td>
+                        ${Number(
+                            p.wins || 0
+                        ).toLocaleString()}
                     </td>
 
                 </tr>
 
-            `;
+            `).join("");
 
-            return;
-        }
-
-        /*
-           Сортируем прямо на клиенте.
-           Это дополнительно гарантирует,
-           что игрок с максимальным ELO
-           будет сверху.
-        */
-
-        players.sort(function(a,b){
-
-            return (
-                Number(b.elo || 0) -
-                Number(a.elo || 0)
-            );
-
-        });
-
-        body.innerHTML =
-            players.map(function(player,index){
-
-                const isMe =
-                    me &&
-                    (
-                        String(me.id) ===
-                        String(player.id)
-                    );
-
-                const rank =
-                    player.rank ||
-                    player.currentRank ||
-                    player.rankName ||
-                    "Без ранга";
-
-                const rankName =
-                    typeof rank === "object"
-                        ? (
-                            rank.name ||
-                            rank.title ||
-                            "Без ранга"
-                        )
-                        : rank;
-
-                return `
-
-                    <tr
-                        class="${
-                            isMe
-                                ? "me"
-                                : ""
-                        }">
-
-                        <td>
-
-                            ${
-                                index === 0
-                                    ? "👑"
-                                    : index + 1
-                            }
-
-                        </td>
-
-                        <td>
-
-                            <b>
-                                ${escapeHtml(
-                                    player.username ||
-                                    "Игрок"
-                                )}
-                            </b>
-
-                        </td>
-
-                        <td>
-
-                            <b>
-                                ${
-                                    Number(
-                                        player.elo || 0
-                                    ).toLocaleString()
-                                }
-                            </b>
-
-                        </td>
-
-                        <td>
-
-                            ${
-                                Number(
-                                    player.xp || 0
-                                ).toLocaleString()
-                            }
-
-                        </td>
-
-                        <td>
-
-                            ${
-                                Number(
-                                    player.wins || 0
-                                ).toLocaleString()
-                            }
-
-                        </td>
-
-                        <td>
-
-                            ${escapeHtml(
-                                rankName
-                            )}
-
-                        </td>
-
-                    </tr>
-
-                `;
-
-            }).join("");
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "RATING ERROR:",
+            error
+        );
 
         body.innerHTML = `
-
             <tr>
-
-                <td colspan="6">
-
-                    <b>
-                        Ошибка рейтинга
-                    </b>
-
+                <td colspan="5">
+                    <b>Ошибка рейтинга</b>
                     <br>
-
                     <span class="muted">
-
                         ${escapeHtml(
                             error.message
                         )}
-
                     </span>
-
                 </td>
-
             </tr>
-
         `;
 
     }
 
 }
 
-/* =========================================================
-   ADMIN
-========================================================= */
 
-function showAdmin(){
-
-    if(!token){
-
-        toast(
-            "Сначала войдите в аккаунт."
-        );
-
-        showSection("login");
-
-        return;
-    }
-
-    showSection("admin");
-
-    loadAdmin();
-
-}
-
-/* =========================================================
+/* =========================
    ADMIN TABS
-========================================================= */
+========================= */
 
 function adminTab(id,button){
 
     document
-        .querySelectorAll(
-            ".admin-content"
-        )
-        .forEach(function(x){
-
-            x.classList.remove(
-                "active"
-            );
-
+        .querySelectorAll(".admin-content")
+        .forEach(x=>{
+            x.classList.remove("active");
         });
+
 
     document
-        .querySelectorAll(
-            ".admin-tab"
-        )
-        .forEach(function(x){
-
-            x.classList.remove(
-                "active"
-            );
-
+        .querySelectorAll(".admin-tab")
+        .forEach(x=>{
+            x.classList.remove("active");
         });
+
 
     const content =
         document.getElementById(id);
+
 
     if(content){
 
@@ -2492,6 +2439,7 @@ function adminTab(id,button){
         );
 
     }
+
 
     if(button){
 
@@ -2503,21 +2451,25 @@ function adminTab(id,button){
 
 }
 
-/* =========================================================
-   LOAD ADMIN
-========================================================= */
+
+/* =========================
+   ADMIN LOAD
+========================= */
 
 async function loadAdmin(){
 
-    try{
+    if(!token){
 
-        await searchPlayers();
+        toast(
+            "Нет авторизации"
+        );
 
-    }catch(error){
+        showSection("login");
 
-        console.error(error);
+        return;
 
     }
+
 
     try{
 
@@ -2527,17 +2479,18 @@ async function loadAdmin(){
             );
 
         renderAdminRanks(
-            data.ranks || data || []
+            data.ranks || []
         );
 
     }catch(error){
 
         console.warn(
             "Admin ranks:",
-            error
+            error.message
         );
 
     }
+
 
     try{
 
@@ -2547,23 +2500,27 @@ async function loadAdmin(){
             );
 
         renderAdminQuests(
-            data.quests || data || []
+            data.quests || []
         );
 
     }catch(error){
 
         console.warn(
             "Admin quests:",
-            error
+            error.message
         );
 
     }
 
+
+    searchPlayers();
+
 }
 
-/* =========================================================
+
+/* =========================
    ADMIN PLAYERS
-========================================================= */
+========================= */
 
 async function searchPlayers(){
 
@@ -2572,9 +2529,8 @@ async function searchPlayers(){
             "adminPlayers"
         );
 
-    if(!box){
-        return;
-    }
+    if(!box) return;
+
 
     try{
 
@@ -2586,176 +2542,155 @@ async function searchPlayers(){
                 .value
                 .trim();
 
+
         const data =
             await api(
                 "/api/admin/users?search=" +
                 encodeURIComponent(search)
             );
 
+
         const users =
-            data.users ||
-            data.players ||
+            Array.isArray(data.users)
+            ?
+            data.users
+            :
             [];
+
 
         if(!users.length){
 
             box.innerHTML = `
-
                 <div class="card">
-
                     Игроки не найдены.
-
                 </div>
-
             `;
 
             return;
+
         }
 
+
         box.innerHTML =
-            users.map(function(user){
+            users.map(u=>`
 
-                return `
+                <div class="card">
 
-                    <div class="card">
+                    <h3>
+                        👤
+                        ${escapeHtml(
+                            u.username ||
+                            "Игрок"
+                        )}
+                    </h3>
 
-                        <h3>
+                    <p class="muted">
+                        ${escapeHtml(
+                            u.email || ""
+                        )}
+                    </p>
 
-                            👤
-                            ${escapeHtml(
-                                user.username ||
-                                "Игрок"
-                            )}
+                    <div class="row">
 
-                        </h3>
+                        <div>
+                            <label>ELO</label>
 
-                        <p class="muted">
-
-                            ${escapeHtml(
-                                user.email || ""
-                            )}
-
-                        </p>
-
-                        <div class="row">
-
-                            <div>
-
-                                <label>
-                                    ELO
-                                </label>
-
-                                <input
-                                    id="elo_${escapeAttr(user.id)}"
-                                    type="number"
-                                    value="${
-                                        Number(
-                                            user.elo || 0
-                                        )
-                                    }">
-
-                            </div>
-
-                            <div>
-
-                                <label>
-                                    Победы
-                                </label>
-
-                                <input
-                                    id="wins_${escapeAttr(user.id)}"
-                                    type="number"
-                                    value="${
-                                        Number(
-                                            user.wins || 0
-                                        )
-                                    }">
-
-                            </div>
-
-                            <div>
-
-                                <label>
-                                    Баланс
-                                </label>
-
-                                <input
-                                    id="balance_${escapeAttr(user.id)}"
-                                    type="number"
-                                    value="${
-                                        Number(
-                                            user.balance || 0
-                                        )
-                                    }">
-
-                            </div>
-
+                            <input
+                                id="elo_${escapeAttr(u.id)}"
+                                type="number"
+                                value="${Number(
+                                    u.elo || 0
+                                )}">
                         </div>
 
-                        <br>
+                        <div>
+                            <label>Победы</label>
 
-                        <button
-                            class="primary"
-                            onclick="savePlayer('${escapeAttr(user.id)}')">
+                            <input
+                                id="wins_${escapeAttr(u.id)}"
+                                type="number"
+                                value="${Number(
+                                    u.wins || 0
+                                )}">
+                        </div>
 
-                            💾 Сохранить
+                        <div>
+                            <label>Баланс</label>
 
-                        </button>
+                            <input
+                                id="balance_${escapeAttr(u.id)}"
+                                type="number"
+                                value="${Number(
+                                    u.balance || 0
+                                )}">
+                        </div>
 
                     </div>
 
-                `;
+                    <br>
 
-            }).join("");
+                    <button
+                        class="primary"
+                        onclick="savePlayer('${escapeAttr(
+                            u.id
+                        )}')">
+
+                        💾 Сохранить
+
+                    </button>
+
+                </div>
+
+            `).join("");
+
 
     }catch(error){
 
-        console.error(error);
+        console.error(
+            "ADMIN USERS ERROR:",
+            error
+        );
 
         box.innerHTML = `
-
             <div class="card">
-
-                <h3>
-                    Ошибка админки
-                </h3>
+                <b>Ошибка админки</b>
 
                 <p class="muted">
                     ${escapeHtml(
                         error.message
                     )}
                 </p>
-
             </div>
-
         `;
 
     }
 
 }
 
-/* =========================================================
+
+/* =========================
    SAVE PLAYER
-========================================================= */
+========================= */
 
 async function savePlayer(id){
 
     try{
 
-        const eloEl =
+        const eloInput =
             document.getElementById(
                 "elo_" + id
             );
 
-        const winsEl =
+        const winsInput =
             document.getElementById(
                 "wins_" + id
             );
 
-        const balanceEl =
+        const balanceInput =
             document.getElementById(
                 "balance_" + id
             );
+
 
         await api(
             "/api/admin/users/" +
@@ -2763,52 +2698,48 @@ async function savePlayer(id){
             {
                 method:"PUT",
 
-                body:JSON.stringify({
-
+                body:{
                     elo:Number(
-                        eloEl
-                            ? eloEl.value
-                            : 0
+                        eloInput.value
                     ),
 
                     wins:Number(
-                        winsEl
-                            ? winsEl.value
-                            : 0
+                        winsInput.value
                     ),
 
                     balance:Number(
-                        balanceEl
-                            ? balanceEl.value
-                            : 0
+                        balanceInput.value
                     )
-
-                })
-
+                }
             }
         );
 
+
         toast(
-            "Игрок сохранён!"
+            "✅ Игрок сохранён!"
         );
+
 
         await loadRating();
 
         await searchPlayers();
 
+
     }catch(error){
 
-        console.error(error);
-
-        toast(error.message);
+        toast(
+            "❌ " +
+            error.message
+        );
 
     }
 
 }
 
-/* =========================================================
+
+/* =========================
    ADMIN RANKS
-========================================================= */
+========================= */
 
 function renderAdminRanks(ranks){
 
@@ -2817,88 +2748,67 @@ function renderAdminRanks(ranks){
             "adminRanks"
         );
 
-    if(!box){
-        return;
-    }
+    if(!box) return;
+
 
     if(!Array.isArray(ranks) || !ranks.length){
 
         box.innerHTML = `
-
             <div class="card">
-
                 Рангов пока нет.
-
             </div>
-
         `;
 
         return;
+
     }
 
+
     box.innerHTML =
-        ranks.map(function(rank){
+        ranks.map(r=>`
 
-            const id =
-                rank.id ||
-                rank.rankId;
+            <div class="card">
 
-            return `
+                <h3>
+                    ${escapeHtml(
+                        r.icon || "★"
+                    )}
 
-                <div class="card">
+                    ${escapeHtml(
+                        r.name || "Ранг"
+                    )}
+                </h3>
 
-                    <h3>
+                <p class="muted">
+                    ${escapeHtml(
+                        r.title || ""
+                    )}
+                </p>
 
-                        ${escapeHtml(
-                            rank.icon || "★"
-                        )}
+                <p>
+                    ${Number(
+                        r.price || 0
+                    ).toLocaleString()} ₽
+                </p>
 
-                        ${escapeHtml(
-                            rank.name ||
-                            rank.title ||
-                            "Ранг"
-                        )}
+                <button
+                    class="action-btn danger"
+                    onclick="deleteRank('${escapeAttr(
+                        r.id ||
+                        r.rankId ||
+                        ""
+                    )}')">
 
-                    </h3>
+                    🗑 Удалить
 
-                    <p class="muted">
+                </button>
 
-                        ${escapeHtml(
-                            rank.title || ""
-                        )}
+            </div>
 
-                    </p>
-
-                    <p>
-
-                        💰
-                        ${
-                            Number(
-                                rank.price || 0
-                            ).toLocaleString()
-                        }
-
-                    </p>
-
-                    <button
-                        class="action-btn danger"
-                        onclick="deleteRank('${escapeAttr(id)}')">
-
-                        🗑 Удалить
-
-                    </button>
-
-                </div>
-
-            `;
-
-        }).join("");
+        `).join("");
 
 }
 
-/* =========================================================
-   CREATE RANK
-========================================================= */
 
 async function createRank(){
 
@@ -2909,8 +2819,7 @@ async function createRank(){
             {
                 method:"POST",
 
-                body:JSON.stringify({
-
+                body:{
                     rankId:
                         document
                             .getElementById(
@@ -2958,52 +2867,41 @@ async function createRank(){
                             )
                             .value
                             .trim()
-
-                })
-
+                }
             }
         );
 
+
         toast(
-            "Ранг создан!"
+            "✅ Ранг создан!"
         );
+
 
         await loadRanks();
 
         await loadAdmin();
 
+
     }catch(error){
 
-        console.error(error);
-
-        toast(error.message);
+        toast(
+            "❌ " +
+            error.message
+        );
 
     }
 
 }
 
-/* =========================================================
-   DELETE RANK
-========================================================= */
 
 async function deleteRank(id){
-
-    if(!id){
-
-        toast(
-            "Не найден ID ранга."
-        );
-
-        return;
-    }
 
     if(!confirm(
         "Удалить этот ранг?"
     )){
-
         return;
-
     }
+
 
     try{
 
@@ -3015,27 +2913,32 @@ async function deleteRank(id){
             }
         );
 
+
         toast(
-            "Ранг удалён!"
+            "🗑 Ранг удалён!"
         );
+
 
         await loadRanks();
 
         await loadAdmin();
 
+
     }catch(error){
 
-        console.error(error);
-
-        toast(error.message);
+        toast(
+            "❌ " +
+            error.message
+        );
 
     }
 
 }
 
-/* =========================================================
+
+/* =========================
    ADMIN QUESTS
-========================================================= */
+========================= */
 
 function renderAdminQuests(quests){
 
@@ -3044,94 +2947,73 @@ function renderAdminQuests(quests){
             "adminQuests"
         );
 
-    if(!box){
-        return;
-    }
+    if(!box) return;
+
 
     if(!Array.isArray(quests) || !quests.length){
 
         box.innerHTML = `
-
             <div class="card">
-
                 Квестов пока нет.
-
             </div>
-
         `;
 
         return;
+
     }
 
+
     box.innerHTML =
-        quests.map(function(q){
+        quests.map(q=>`
 
-            const id =
-                q.id ||
-                q.questId;
+            <div class="card">
 
-            return `
+                <h3>
+                    🚀
+                    ${escapeHtml(
+                        q.title || "Квест"
+                    )}
+                </h3>
 
-                <div class="card">
+                <p class="muted">
+                    ${escapeHtml(
+                        q.description || ""
+                    )}
+                </p>
 
-                    <h3>
+                <p>
+                    💰
+                    ${Number(
+                        q.reward || 0
+                    ).toLocaleString()}
 
-                        🚀
-                        ${escapeHtml(
-                            q.title ||
-                            "Квест"
-                        )}
+                    ·
 
-                    </h3>
+                    ⭐
+                    ${Number(
+                        q.xp || 0
+                    ).toLocaleString()}
+                    XP
+                </p>
 
-                    <p class="muted">
+                <button
+                    class="action-btn danger"
+                    onclick="deleteQuest('${escapeAttr(
+                        q.id ||
+                        q.questId ||
+                        ""
+                    )}')">
 
-                        ${escapeHtml(
-                            q.description || ""
-                        )}
+                    🗑 Удалить
 
-                    </p>
+                </button>
 
-                    <p>
+            </div>
 
-                        💰
-                        ${
-                            Number(
-                                q.reward || 0
-                            ).toLocaleString()
-                        }
-
-                        ·
-
-                        ⭐
-                        ${
-                            Number(
-                                q.xp || 0
-                            ).toLocaleString()
-                        }
-                        XP
-
-                    </p>
-
-                    <button
-                        class="action-btn danger"
-                        onclick="deleteQuest('${escapeAttr(id)}')">
-
-                        🗑 Удалить
-
-                    </button>
-
-                </div>
-
-            `;
-
-        }).join("");
+        `).join("");
 
 }
 
-/* =========================================================
-   CREATE QUEST
-========================================================= */
 
 async function createQuest(){
 
@@ -3142,8 +3024,7 @@ async function createQuest(){
             {
                 method:"POST",
 
-                body:JSON.stringify({
-
+                body:{
                     questId:
                         document
                             .getElementById(
@@ -3183,52 +3064,41 @@ async function createQuest(){
                             )
                             .value
                     )
-
-                })
-
+                }
             }
         );
 
+
         toast(
-            "Квест создан!"
+            "✅ Квест создан!"
         );
+
 
         await loadQuests();
 
         await loadAdmin();
 
+
     }catch(error){
 
-        console.error(error);
-
-        toast(error.message);
+        toast(
+            "❌ " +
+            error.message
+        );
 
     }
 
 }
 
-/* =========================================================
-   DELETE QUEST
-========================================================= */
 
 async function deleteQuest(id){
-
-    if(!id){
-
-        toast(
-            "Не найден ID квеста."
-        );
-
-        return;
-    }
 
     if(!confirm(
         "Удалить этот квест?"
     )){
-
         return;
-
     }
+
 
     try{
 
@@ -3240,105 +3110,149 @@ async function deleteQuest(id){
             }
         );
 
+
         toast(
-            "Квест удалён!"
+            "🗑 Квест удалён!"
         );
+
 
         await loadQuests();
 
         await loadAdmin();
 
+
     }catch(error){
 
-        console.error(error);
-
-        toast(error.message);
+        toast(
+            "❌ " +
+            error.message
+        );
 
     }
 
 }
 
-/* =========================================================
-   SECURITY / HTML ESCAPE
-========================================================= */
+
+/* =========================
+   SECURITY
+========================= */
 
 function escapeHtml(value){
 
     return String(
         value ?? ""
     )
-    .replaceAll("&","&amp;")
-    .replaceAll("<","&lt;")
-    .replaceAll(">","&gt;")
-    .replaceAll('"',"&quot;")
-    .replaceAll("'","&#039;");
+    .replaceAll(
+        "&",
+        "&amp;"
+    )
+    .replaceAll(
+        "<",
+        "&lt;"
+    )
+    .replaceAll(
+        ">",
+        "&gt;"
+    )
+    .replaceAll(
+        '"',
+        "&quot;"
+    )
+    .replaceAll(
+        "'",
+        "&#039;"
+    );
 
 }
+
 
 function escapeAttr(value){
 
     return String(
         value ?? ""
     )
-    .replaceAll("\\","\\\\")
-    .replaceAll("'","\\'");
+    .replaceAll(
+        "\\",
+        "\\\\"
+    )
+    .replaceAll(
+        "'",
+        "\\'"
+    );
 
 }
 
-/* =========================================================
-   START
-========================================================= */
+
+/* =========================
+   ENTER KEY
+========================= */
 
 document.addEventListener(
-    "DOMContentLoaded",
-    async function(){
+    "keydown",
+    function(event){
 
-        try{
+        if(event.key !== "Enter"){
+            return;
+        }
 
-            await loadRanks();
+        const target =
+            event.target;
 
-        }catch(error){
+        if(
+            target &&
+            target.id ===
+            "loginPassword"
+        ){
 
-            console.error(error);
+            login();
 
         }
 
-        try{
+        if(
+            target &&
+            target.id ===
+            "regPassword"
+        ){
 
-            await loadQuests();
-
-        }catch(error){
-
-            console.error(error);
-
-        }
-
-        try{
-
-            await loadRating();
-
-        }catch(error){
-
-            console.error(error);
-
-        }
-
-        if(token){
-
-            try{
-
-                await loadProfile();
-
-            }catch(error){
-
-                console.error(error);
-
-            }
+            register();
 
         }
 
     }
 );
+
+
+/* =========================
+   START
+========================= */
+
+(async function(){
+
+    await loadRanks();
+
+    await loadQuests();
+
+    await loadRating();
+
+
+    if(token){
+
+        try{
+
+            await loadProfile();
+
+        }catch(error){
+
+            console.warn(
+                "Saved session invalid:",
+                error
+            );
+
+        }
+
+    }
+
+})();
 
 </script>
 
